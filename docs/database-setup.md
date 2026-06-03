@@ -64,7 +64,7 @@ create policy "anon insert intake"
 
 These are server-only and must NOT have a `VITE_` prefix:
 
-- `SUPABASE_SERVICE_ROLE_KEY` — service role key from the same Supabase project.
+- `INTAKE_SUPABASE_SERVICE_KEY` — service role key from the same Supabase project.
   Needed so the server can update `pms_lead_id`, `pms_status`, etc. on the
   submission row after forwarding to the PMS. (Without it, inserts still
   succeed via the anon role but sync columns won't update.)
