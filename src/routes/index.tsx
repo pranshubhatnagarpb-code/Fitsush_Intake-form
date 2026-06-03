@@ -1,26 +1,25 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { IntakeWizard } from "@/components/intake/Wizard";
 
 export const Route = createFileRoute("/")({
-  component: Index,
+  head: () => ({
+    meta: [
+      { title: "Premium Nutrition Intake" },
+      {
+        name: "description",
+        content:
+          "A premium, private intake form to prepare your personalised nutrition consultation.",
+      },
+      { property: "og:title", content: "Premium Nutrition Intake" },
+      {
+        property: "og:description",
+        content: "Start your personalised nutrition plan in a few thoughtful steps.",
+      },
+    ],
+  }),
+  component: IntakePage,
 });
 
-// IMPORTANT: Replace this placeholder. For sites with multiple pages (About, Services, Contact, etc.),
-// create separate route files (about.tsx, services.tsx, contact.tsx) — don't put all pages in this file.
-function PlaceholderIndex() {
-  return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
-  );
-}
-
-function Index() {
-  return <PlaceholderIndex />;
+function IntakePage() {
+  return <IntakeWizard />;
 }

@@ -10,11 +10,17 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ThankYouIdRouteImport } from './routes/thank-you.$id'
 import { Route as ApiPublicIntakeRouteImport } from './routes/api/public/intake'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ThankYouIdRoute = ThankYouIdRouteImport.update({
+  id: '/thank-you/$id',
+  path: '/thank-you/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicIntakeRoute = ApiPublicIntakeRouteImport.update({
@@ -25,27 +31,31 @@ const ApiPublicIntakeRoute = ApiPublicIntakeRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/thank-you/$id': typeof ThankYouIdRoute
   '/api/public/intake': typeof ApiPublicIntakeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/thank-you/$id': typeof ThankYouIdRoute
   '/api/public/intake': typeof ApiPublicIntakeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/thank-you/$id': typeof ThankYouIdRoute
   '/api/public/intake': typeof ApiPublicIntakeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/public/intake'
+  fullPaths: '/' | '/thank-you/$id' | '/api/public/intake'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/public/intake'
-  id: '__root__' | '/' | '/api/public/intake'
+  to: '/' | '/thank-you/$id' | '/api/public/intake'
+  id: '__root__' | '/' | '/thank-you/$id' | '/api/public/intake'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ThankYouIdRoute: typeof ThankYouIdRoute
   ApiPublicIntakeRoute: typeof ApiPublicIntakeRoute
 }
 
@@ -56,6 +66,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/thank-you/$id': {
+      id: '/thank-you/$id'
+      path: '/thank-you/$id'
+      fullPath: '/thank-you/$id'
+      preLoaderRoute: typeof ThankYouIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/intake': {
@@ -70,8 +87,18 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ThankYouIdRoute: ThankYouIdRoute,
   ApiPublicIntakeRoute: ApiPublicIntakeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
