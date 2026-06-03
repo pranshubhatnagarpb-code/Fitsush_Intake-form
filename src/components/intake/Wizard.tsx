@@ -27,7 +27,7 @@ import {
   type WizardState,
   type WizardBranch,
 } from "@/lib/intake/wizard-state";
-import { submitIntake } from "@/server/intake.functions";
+import { submitIntake } from "@/lib/intake.functions";
 
 const COMPLAINTS = [
   "bloating",

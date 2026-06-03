@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { submissionSchema, type SubmissionInput } from "@/lib/intake/schema";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { forwardToPms } from "./pms.server";
+import { forwardToPms } from "@/server/pms.server";
 
 export type SubmitIntakeResult = {
   submissionId: string;
