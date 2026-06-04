@@ -142,29 +142,64 @@ export function NumberStepper({
   suffix?: string;
 }) {
   const v = value ?? 0;
+  const [text, setText] = React.useState<string>(value !== undefined ? String(value) : "");
+  React.useEffect(() => {
+    setText(value !== undefined ? String(value) : "");
+  }, [value]);
+
+  const clamp = (n: number) => Math.min(max, Math.max(min, n));
+  const commit = (raw: string) => {
+    if (raw.trim() === "") {
+      setText("");
+      return;
+    }
+    const n = Number(raw);
+    if (Number.isFinite(n)) {
+      const c = clamp(+n.toFixed(2));
+      onChange(c);
+      setText(String(c));
+    } else {
+      setText(value !== undefined ? String(value) : "");
+    }
+  };
+
   return (
-    <div className="inline-flex items-center gap-3 rounded-2xl border bg-card p-1.5">
+    <div className="inline-flex items-center gap-2 rounded-2xl border bg-card p-1.5">
       <button
         type="button"
-        onClick={() => onChange(Math.max(min, +(v - step).toFixed(2)))}
-        className="h-10 w-10 rounded-xl bg-muted text-lg font-semibold hover:bg-accent"
+        onClick={() => onChange(clamp(+(v - step).toFixed(2)))}
+        className="h-10 w-10 shrink-0 rounded-xl bg-muted text-lg font-semibold hover:bg-accent"
+        aria-label="Decrease"
       >
         −
       </button>
-      <div className="min-w-16 text-center text-base font-semibold tabular-nums">
-        {value ?? "—"}
+      <div className="flex items-center">
+        <input
+          type="text"
+          inputMode="decimal"
+          value={text}
+          onChange={(e) => setText(e.target.value.replace(/[^0-9.\-]/g, ""))}
+          onBlur={(e) => commit(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+          }}
+          placeholder="—"
+          className="w-16 bg-transparent text-center text-base font-semibold tabular-nums outline-none focus:ring-0"
+        />
         {suffix ? <span className="ml-1 text-xs text-muted-foreground">{suffix}</span> : null}
       </div>
       <button
         type="button"
-        onClick={() => onChange(Math.min(max, +(v + step).toFixed(2)))}
-        className="h-10 w-10 rounded-xl bg-muted text-lg font-semibold hover:bg-accent"
+        onClick={() => onChange(clamp(+(v + step).toFixed(2)))}
+        className="h-10 w-10 shrink-0 rounded-xl bg-muted text-lg font-semibold hover:bg-accent"
+        aria-label="Increase"
       >
         +
       </button>
     </div>
   );
 }
+
 
 export function YesNo({
   value,
