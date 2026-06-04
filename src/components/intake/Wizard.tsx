@@ -83,6 +83,16 @@ type StepDef = {
   validate: () => string | null;
 };
 
+function calcAge(dob: string): number | undefined {
+  const d = new Date(dob);
+  if (Number.isNaN(d.getTime())) return undefined;
+  const now = new Date();
+  let age = now.getFullYear() - d.getFullYear();
+  const m = now.getMonth() - d.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < d.getDate())) age--;
+  return age >= 0 && age <= 120 ? age : undefined;
+}
+
 export function IntakeWizard() {
   const [state, setState] = React.useState<WizardState>(initialState);
   const [stepIdx, setStepIdx] = React.useState(0);
@@ -167,7 +177,15 @@ export function IntakeWizard() {
                 id="dob"
                 type="date"
                 value={state.dob ?? ""}
-                onChange={(e) => set("dob", e.target.value || undefined)}
+                max={new Date().toISOString().slice(0, 10)}
+                onChange={(e) => {
+                  const dob = e.target.value || undefined;
+                  setState((s) => ({
+                    ...s,
+                    dob,
+                    age: dob ? calcAge(dob) : s.age,
+                  }));
+                }}
                 className="h-12"
               />
             </div>
@@ -179,11 +197,15 @@ export function IntakeWizard() {
                 min={0}
                 max={120}
                 value={state.age ?? ""}
+                readOnly={!!state.dob}
                 onChange={(e) =>
                   set("age", e.target.value ? Number(e.target.value) : undefined)
                 }
-                className="h-12"
+                className={cn("h-12", state.dob && "bg-muted")}
               />
+              {state.dob ? (
+                <p className="mt-1 text-xs text-muted-foreground">Auto-calculated from DOB</p>
+              ) : null}
             </div>
           </div>
           <div>
