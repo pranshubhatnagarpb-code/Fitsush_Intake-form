@@ -1,7 +1,9 @@
 import * as React from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, ArrowRight, Check, Loader2, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Loader2 } from "lucide-react";
+// @ts-ignore — Vite resolves this correctly at build time
+import mkrLogo from "@/MKR Logo.webp";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -13,7 +15,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 
 import {
-  Chip,
   ChipGroup,
   FieldLabel,
   NumberStepper,
@@ -446,11 +447,22 @@ export function IntakeWizard() {
               onChange={(v) => set("activityLevel", v)}
             />
           </div>
+          <div>
+            <FieldLabel>Screen time (hrs/day)</FieldLabel>
+            <NumberStepper
+              value={state.screenTimeHrs}
+              onChange={(v) => set("screenTimeHrs", v)}
+              min={0}
+              max={24}
+              step={0.5}
+              suffix="hrs"
+            />
+          </div>
         </div>
       ),
       validate: () =>
         !state.sleepHours || !state.waterIntake || !state.activityLevel
-          ? "Complete all three"
+          ? "Complete sleep, water and activity"
           : null,
     },
     {
@@ -464,6 +476,8 @@ export function IntakeWizard() {
             ["rDigestion", "Digestion"],
             ["rEnergy", "Daily energy"],
             ["rFatigue", "Fatigue level"],
+            ["rSkin", "Skin health"],
+            ["rHair", "Hair health"],
           ] as const).map(([k, label]) => (
             <div key={k}>
               <FieldLabel required>{label}</FieldLabel>
@@ -473,8 +487,8 @@ export function IntakeWizard() {
         </div>
       ),
       validate: () =>
-        !state.rSleep || !state.rDigestion || !state.rEnergy || !state.rFatigue
-          ? "Rate all four"
+        !state.rSleep || !state.rDigestion || !state.rEnergy || !state.rFatigue || !state.rSkin || !state.rHair
+          ? "Rate all six areas"
           : null,
     },
     {
@@ -524,18 +538,22 @@ export function IntakeWizard() {
   return (
     <div className="min-h-screen bg-background pb-32">
       {/* Top progress strip */}
-      <header className="sticky top-0 z-10 border-b bg-background/85 backdrop-blur">
-        <div className="mx-auto max-w-2xl px-4 pt-4 pb-3">
-          <div className="mb-2 flex items-center justify-between text-xs font-medium text-muted-foreground">
-            <span>
-              Step {stepIdx + 1} of {total} ·{" "}
-              {stepIdx === total - 1 ? "Optional" : "Required"}
-            </span>
-            <span className="inline-flex items-center gap-1 text-primary">
-              <Sparkles className="h-3 w-3" /> Premium intake
+      <header className="sticky top-0 z-10 border-b bg-card/95 shadow-sm backdrop-blur">
+        <div className="mx-auto max-w-2xl px-4 pt-3 pb-3">
+          {/* MKR Clinic branding */}
+          <div className="mb-3 flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <img src={mkrLogo} alt="MKR Clinic" className="h-8 w-auto object-contain" />
+              <div className="leading-none">
+                <p className="text-xs font-semibold text-foreground">MKR Clinic</p>
+                <p className="text-[10px] text-muted-foreground">Dr. Malika Kabra Rathi</p>
+              </div>
+            </div>
+            <span className="text-xs text-muted-foreground">
+              Step {stepIdx + 1} of {total} · {stepIdx === total - 1 ? "Optional" : "Required"}
             </span>
           </div>
-          <Progress value={progress} className="h-1.5" />
+          <Progress value={progress} className="h-1" />
         </div>
       </header>
 
@@ -669,6 +687,16 @@ function OptionalSections({ state, set }: { state: WizardState; set: SetFn }) {
       </Section>
 
       <Section title="Digestion detail">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+          <div>
+            <FieldLabel>Acidity severity (1–5)</FieldLabel>
+            <Rating value={state.acidityRating} onChange={(n) => set("acidityRating", n)} />
+          </div>
+          <div>
+            <FieldLabel>Bloating severity (1–5)</FieldLabel>
+            <Rating value={state.bloatingRating} onChange={(n) => set("bloatingRating", n)} />
+          </div>
+        </div>
         <div>
           <FieldLabel>Bowel frequency</FieldLabel>
           <Segmented
@@ -807,21 +835,44 @@ function OptionalSections({ state, set }: { state: WizardState; set: SetFn }) {
         </div>
       </Section>
 
+      <Section title="Blood parameters & inflammation">
+        <div>
+          <FieldLabel hint="Select any markers you have been tested for or have concerns about">Blood markers</FieldLabel>
+          <ChipGroup
+            options={[
+              "Haemoglobin",
+              "HbA1c",
+              "Fasting glucose",
+              "Cholesterol",
+              "LDL",
+              "HDL",
+              "Triglycerides",
+              "TSH",
+              "T3/T4",
+              "Vitamin D",
+              "Vitamin B12",
+              "Iron / Ferritin",
+              "Uric acid",
+              "CRP",
+              "Homocysteine",
+              "Insulin",
+            ].map((v) => ({ value: v, label: v }))}
+            value={state.bloodParameters}
+            onChange={(v) => set("bloodParameters", v as string[])}
+            multi
+          />
+        </div>
+        <div>
+          <FieldLabel>Known inflammation concerns?</FieldLabel>
+          <YesNo value={state.inflammationConcerns} onChange={(v) => set("inflammationConcerns", v)} />
+        </div>
+      </Section>
+
       {!isChild && (
         <Section title="Lifestyle depth">
           <div>
             <FieldLabel>Stress level (1–5)</FieldLabel>
             <Rating value={state.stress} onChange={(n) => set("stress", n)} />
-          </div>
-          <div>
-            <FieldLabel>Screen time (hrs/day)</FieldLabel>
-            <NumberStepper
-              value={state.screenTimeHrs}
-              onChange={(v) => set("screenTimeHrs", v)}
-              min={0}
-              max={24}
-              step={0.5}
-            />
           </div>
           <div>
             <FieldLabel>Do you smoke?</FieldLabel>
@@ -1000,6 +1051,18 @@ function FemaleSection({ state, set }: { state: WizardState; set: SetFn }) {
         <Rating value={state.painSeverity} onChange={(n) => set("painSeverity", n)} />
       </div>
       <div>
+        <FieldLabel>Pain medication for periods?</FieldLabel>
+        <YesNo value={state.periodPainMeds} onChange={(v) => set("periodPainMeds", v)} />
+      </div>
+      <div>
+        <FieldLabel>Keyhole surgery / laparoscopy for endometriosis?</FieldLabel>
+        <YesNo value={state.endometriosisSurgery} onChange={(v) => set("endometriosisSurgery", v)} />
+      </div>
+      <div>
+        <FieldLabel>Hysterectomy?</FieldLabel>
+        <YesNo value={state.hysterectomy} onChange={(v) => set("hysterectomy", v)} />
+      </div>
+      <div>
         <FieldLabel>On hormonal intervention?</FieldLabel>
         <YesNo value={state.hormonalActive} onChange={(v) => set("hormonalActive", v)} />
         {state.hormonalActive ? (
@@ -1174,6 +1237,10 @@ function ChildSection({ state, set }: { state: WizardState; set: SetFn }) {
           <Rating value={state.attentionSpan} onChange={(n) => set("attentionSpan", n)} />
         </div>
         <div>
+          <FieldLabel>Memory (1–5)</FieldLabel>
+          <Rating value={state.memory} onChange={(n) => set("memory", n)} />
+        </div>
+        <div>
           <FieldLabel>Focus (1–5)</FieldLabel>
           <Rating value={state.focus} onChange={(n) => set("focus", n)} />
         </div>
@@ -1209,8 +1276,8 @@ function ChildSection({ state, set }: { state: WizardState; set: SetFn }) {
         <div>
           <FieldLabel>Screen time (hrs/day)</FieldLabel>
           <NumberStepper
-            value={state.childScreenTimeHrs}
-            onChange={(v) => set("childScreenTimeHrs", v)}
+            value={state.screenTimeHrs}
+            onChange={(v) => set("screenTimeHrs", v)}
             min={0}
             max={24}
             step={0.5}

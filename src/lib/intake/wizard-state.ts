@@ -28,10 +28,14 @@ export type WizardState = {
   sleepHours?: number;
   waterIntake?: "<1L" | "1-2L" | "2-3L" | "3L+";
   activityLevel?: "sedentary" | "light" | "moderate" | "active" | "very_active";
+  screenTimeHrs?: number;
+  // symptom ratings (required — all 6)
   rSleep?: number;
   rDigestion?: number;
   rEnergy?: number;
   rFatigue?: number;
+  rSkin?: number;
+  rHair?: number;
   // optional common
   medicalHistory: string[];
   familyHistory: string[];
@@ -41,6 +45,11 @@ export type WizardState = {
   stoolConsistency: string[];
   bloatingTiming: string[];
   acidityTriggers: string[];
+  acidityRating?: number;
+  bloatingRating?: number;
+  // blood / inflammation
+  bloodParameters: string[];
+  inflammationConcerns?: boolean;
   // food pattern
   dietType?: "veg" | "non_veg" | "eggetarian" | "vegan" | "jain";
   cuisines: string[];
@@ -49,9 +58,8 @@ export type WizardState = {
   packagedFoodFrequency?: "rarely" | "1-2_wk" | "3-5_wk" | "daily" | "multi_daily";
   sugarDrinks?: boolean;
   teaCoffeePerDay?: number;
-  // lifestyle depth
+  // lifestyle depth (adults)
   stress?: number;
-  screenTimeHrs?: number;
   smokingActive?: boolean;
   smokingFreq?: string;
   alcoholActive?: boolean;
@@ -66,6 +74,8 @@ export type WizardState = {
   periodDays?: number;
   pmsSymptoms: string[];
   painSeverity?: number;
+  periodPainMeds?: boolean;
+  endometriosisSurgery?: boolean;
   hormonalActive?: boolean;
   hormonalTypes: string[];
   pregnancyStatus?: "none" | "trying" | "pregnant" | "lactating";
@@ -73,6 +83,7 @@ export type WizardState = {
   menopauseReached?: boolean;
   menopauseAgeAt?: number;
   menopauseType?: "natural" | "induced_surgical" | "induced_medical";
+  hysterectomy?: boolean;
   // male
   urinarySymptoms: string[];
   libido?: number;
@@ -85,6 +96,7 @@ export type WizardState = {
   schoolGrade?: string;
   stamina?: number;
   attentionSpan?: number;
+  memory?: number;
   focus?: number;
   appetite?: "poor" | "variable" | "good" | "very_good" | "excessive";
   pickyEater?: number;
@@ -92,7 +104,6 @@ export type WizardState = {
   sportsTiming: string[];
   outdoorSports: string[];
   indoorSports: string[];
-  childScreenTimeHrs?: number;
   childPackagedFoodFrequency?: "rarely" | "1-2_wk" | "3-5_wk" | "daily" | "multi_daily";
   growthConcerns: string[];
 };
@@ -108,6 +119,7 @@ export const initialState: WizardState = {
   stoolConsistency: [],
   bloatingTiming: [],
   acidityTriggers: [],
+  bloodParameters: [],
   cuisines: [],
   flow: [],
   pmsSymptoms: [],
@@ -159,6 +171,8 @@ export function buildPayload(s: WizardState): SubmissionInput {
       digestion: s.rDigestion!,
       energy: s.rEnergy!,
       fatigue: s.rFatigue!,
+      skin: s.rSkin!,
+      hair: s.rHair!,
     },
   };
 
@@ -171,6 +185,8 @@ export function buildPayload(s: WizardState): SubmissionInput {
       stoolConsistency: s.stoolConsistency,
       bloatingTiming: s.bloatingTiming,
       acidityTriggers: s.acidityTriggers,
+      acidityRating: s.acidityRating,
+      bloatingRating: s.bloatingRating,
     }),
     foodPattern: stripEmpty({
       dietType: s.dietType,
@@ -195,6 +211,8 @@ export function buildPayload(s: WizardState): SubmissionInput {
       shiftWork: s.shiftWork,
       travelFrequency: s.travelFrequency,
     }),
+    bloodParameters: s.bloodParameters,
+    inflammationConcerns: s.inflammationConcerns,
     notes: s.notes,
   });
 
@@ -203,6 +221,7 @@ export function buildPayload(s: WizardState): SubmissionInput {
       schoolGrade: s.schoolGrade,
       stamina: s.stamina,
       attentionSpan: s.attentionSpan,
+      memory: s.memory,
       focus: s.focus,
       appetite: s.appetite,
       pickyEater: s.pickyEater,
@@ -210,7 +229,7 @@ export function buildPayload(s: WizardState): SubmissionInput {
       sportsTiming: s.sportsTiming,
       outdoorSports: s.outdoorSports,
       indoorSports: s.indoorSports,
-      screenTimeHrs: s.childScreenTimeHrs,
+      screenTimeHrs: s.screenTimeHrs,
       packagedFoodFrequency: s.childPackagedFoodFrequency,
       growthConcerns: s.growthConcerns,
     });
@@ -252,6 +271,9 @@ export function buildPayload(s: WizardState): SubmissionInput {
       periodDays: s.periodDays,
       pmsSymptoms: s.pmsSymptoms,
       painSeverity: s.painSeverity,
+      periodPainMeds: s.periodPainMeds,
+      endometriosisSurgery: s.endometriosisSurgery,
+      hysterectomy: s.hysterectomy,
       hormonalIntervention:
         s.hormonalActive !== undefined
           ? { active: s.hormonalActive, types: s.hormonalTypes }

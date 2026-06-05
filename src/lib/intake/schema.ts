@@ -24,6 +24,8 @@ const symptomSnapshot = z.object({
   digestion: ratingSchema,
   energy: ratingSchema,
   fatigue: ratingSchema,
+  skin: ratingSchema,
+  hair: ratingSchema,
 });
 
 const lifestyleQuick = z.object({
@@ -81,6 +83,8 @@ const optionalCommon = z
         stoolConsistency: z.array(z.string().max(40)).max(10).optional(),
         bloatingTiming: z.array(z.string().max(40)).max(10).optional(),
         acidityTriggers: z.array(z.string().max(40)).max(10).optional(),
+        acidityRating: ratingSchema.optional(),
+        bloatingRating: ratingSchema.optional(),
       })
       .optional(),
     foodPattern: z
@@ -106,6 +110,8 @@ const optionalCommon = z
         travelFrequency: z.string().max(40).optional(),
       })
       .optional(),
+    bloodParameters: z.array(z.string().max(60)).max(20).optional(),
+    inflammationConcerns: z.boolean().optional(),
     notes: z.string().max(240).optional(),
   })
   .partial();
@@ -138,6 +144,9 @@ const femaleOptional = z
         type: z.enum(["natural", "induced_surgical", "induced_medical"]).optional(),
       })
       .optional(),
+    hysterectomy: z.boolean().optional(),
+    periodPainMeds: z.boolean().optional(),
+    endometriosisSurgery: z.boolean().optional(),
   })
   .partial();
 
@@ -175,6 +184,7 @@ const childOptional = z
     indoorSports: z.array(z.string().max(40)).max(15).optional(),
     screenTimeHrs: z.number().min(0).max(24).optional(),
     packagedFoodFrequency: z.enum(["rarely", "1-2_wk", "3-5_wk", "daily", "multi_daily"]).optional(),
+    memory: ratingSchema.optional(),
     growthConcerns: z.array(z.string().max(40)).max(10).optional(),
   })
   .partial();

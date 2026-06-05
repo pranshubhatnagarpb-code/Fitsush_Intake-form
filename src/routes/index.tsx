@@ -4,13 +4,12 @@ import { IntakeWizard } from "@/components/intake/Wizard";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Premium Nutrition Intake" },
+      { title: "MKR Clinic — Nutrition Intake" },
       {
         name: "description",
-        content:
-          "A premium, private intake form to prepare your personalised nutrition consultation.",
+        content: "A private intake form to prepare your personalised nutrition consultation with Dr. Malika Kabra Rathi.",
       },
-      { property: "og:title", content: "Premium Nutrition Intake" },
+      { property: "og:title", content: "MKR Clinic — Nutrition Intake" },
       {
         property: "og:description",
         content: "Start your personalised nutrition plan in a few thoughtful steps.",

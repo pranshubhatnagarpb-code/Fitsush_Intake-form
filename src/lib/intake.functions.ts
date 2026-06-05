@@ -1,19 +1,102 @@
 import { createServerFn } from "@tanstack/react-start";
 import { submissionSchema, type SubmissionInput } from "@/lib/intake/schema";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { forwardToPms } from "@/server/pms.server";
 
 export type SubmitIntakeResult = {
   submissionId: string;
   pmsStatus: "pending" | "sent" | "failed" | "duplicate_merged";
 };
 
+// ---------------------------------------------------------------------------
+// Creates or updates a client record in the shared PMS database.
+// Maps all intake fields to their corresponding clients table columns.
+// ---------------------------------------------------------------------------
+async function upsertClient(input: SubmissionInput, submissionId: string): Promise<string | null> {
+  const isChild = input.branch === "child";
+  const phone = isChild
+    ? input.guardian.guardianPhone ?? null
+    : input.contact.phone ?? null;
+  const email = isChild
+    ? input.guardian.guardianEmail ?? null
+    : input.contact.email ?? null;
+  const normalizedPhone = phone?.replace(/\s+/g, "") || null;
+  const normalizedEmail = email?.trim().toLowerCase() || null;
+
+  // Dedup: find existing client by phone, then email
+  let existingId: string | null = null;
+  if (normalizedPhone) {
+    const { data } = await supabaseAdmin
+      .from("clients")
+      .select("id")
+      .eq("phone", normalizedPhone)
+      .limit(1)
+      .maybeSingle();
+    if (data) existingId = data.id as string;
+  }
+  if (!existingId && normalizedEmail) {
+    const { data } = await supabaseAdmin
+      .from("clients")
+      .select("id")
+      .eq("email", normalizedEmail)
+      .limit(1)
+      .maybeSingle();
+    if (data) existingId = data.id as string;
+  }
+
+  // Safely access optional section (union type, cast to any)
+  const opt = (input as any).optional as Record<string, any> | undefined;
+
+  const payload: Record<string, unknown> = {
+    name: input.required.fullName,
+    date_of_birth: input.required.dob ?? null,
+    address: input.required.city ?? null,
+    gender: isChild ? null : input.branch,
+    weight: input.required.body.weightKg,
+    height: input.required.body.heightCm,
+    goal: input.required.primaryGoal,
+    chief_complaints: input.required.chiefComplaints,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (normalizedPhone) payload.phone = normalizedPhone;
+  if (normalizedEmail) payload.email = normalizedEmail;
+
+  // Optional fields — only set if provided, never overwrite with null
+  if (opt?.foodPattern?.dietType) payload.diet_preference = opt.foodPattern.dietType;
+  if (Array.isArray(opt?.medicalHistory) && opt.medicalHistory.length > 0) {
+    payload.health_conditions = opt.medicalHistory;
+  }
+  if (Array.isArray(opt?.familyHistory) && opt.familyHistory.length > 0) {
+    payload.family_history = opt.familyHistory;
+  }
+
+  if (existingId) {
+    const { error } = await supabaseAdmin
+      .from("clients")
+      .update(payload)
+      .eq("id", existingId);
+    if (error) throw new Error(`Client update failed: ${error.message}`);
+    return existingId;
+  }
+
+  const { data: created, error } = await supabaseAdmin
+    .from("clients")
+    .insert({ ...payload, created_at: new Date().toISOString() })
+    .select("id")
+    .single();
+  if (error || !created) throw new Error(`Client insert failed: ${error?.message ?? "unknown"}`);
+  return created.id as string;
+}
+
+// ---------------------------------------------------------------------------
+// Main submission server function
+// ---------------------------------------------------------------------------
 export const submitIntake = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => submissionSchema.parse(input))
   .handler(async ({ data }): Promise<SubmitIntakeResult> => {
     const input: SubmissionInput = data;
 
-    // 1) Insert local audit row (pending)
+    // 1) Insert audit row
     const insertRow = {
       branch: input.branch,
       age: input.required.age ?? null,
@@ -42,43 +125,36 @@ export const submitIntake = createServerFn({ method: "POST" })
 
     const submissionId = inserted.id as string;
 
-    // 2) Forward to PMS (best-effort; client always sees success)
-    const result = await forwardToPms({ submissionId, input });
-
+    // 2) Create / update client profile
     let pmsStatus: SubmitIntakeResult["pmsStatus"];
     const update: Record<string, unknown> = { pms_attempts: 1 };
 
-    if (result.ok) {
-      pmsStatus = result.action === "duplicate_merged" ? "duplicate_merged" : "sent";
-      update.pms_status = pmsStatus;
-      update.pms_lead_id = result.pmsLeadId;
+    try {
+      const clientId = await upsertClient(input, submissionId);
+      pmsStatus = "sent";
+      update.pms_status = "sent";
+      update.pms_lead_id = clientId;
       update.pms_sent_at = new Date().toISOString();
       update.pms_error = null;
-    } else {
+    } catch (e) {
       pmsStatus = "failed";
       update.pms_status = "failed";
-      update.pms_error = result.error;
+      update.pms_error = e instanceof Error ? e.message : String(e);
+      // eslint-disable-next-line no-console
+      console.error("Client profile creation failed:", update.pms_error);
     }
 
-    const { error: updErr } = await supabaseAdmin
+    await supabaseAdmin
       .from("intake_submissions")
       .update(update)
       .eq("id", submissionId);
 
-    if (updErr) {
-      // Sync columns failed to update — submission is still saved. Log only.
-      // eslint-disable-next-line no-console
-      console.error("intake_submissions sync update failed", updErr.message);
-    }
-
     return { submissionId, pmsStatus };
   });
 
-/**
- * Admin retry: re-forwards an existing pending/failed submission to the PMS.
- * Protected by an ADMIN_RETRY_TOKEN secret so PMS or an internal tool can
- * call it safely. NOT exposed to clients.
- */
+// ---------------------------------------------------------------------------
+// Admin retry
+// ---------------------------------------------------------------------------
 export const retrySubmission = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => {
     const v = input as { id?: string; token?: string };
@@ -87,9 +163,7 @@ export const retrySubmission = createServerFn({ method: "POST" })
   })
   .handler(async ({ data }) => {
     const expected = process.env.ADMIN_RETRY_TOKEN;
-    if (!expected || data.token !== expected) {
-      throw new Error("Unauthorized");
-    }
+    if (!expected || data.token !== expected) throw new Error("Unauthorized");
 
     const { data: row, error } = await supabaseAdmin
       .from("intake_submissions")
@@ -100,21 +174,21 @@ export const retrySubmission = createServerFn({ method: "POST" })
     if (error || !row) throw new Error("Submission not found");
 
     const parsed = submissionSchema.parse(row.payload);
-    const result = await forwardToPms({ submissionId: row.id as string, input: parsed });
-
     const update: Record<string, unknown> = {
       pms_attempts: ((row.pms_attempts as number) ?? 0) + 1,
     };
-    if (result.ok) {
-      update.pms_status = result.action === "duplicate_merged" ? "duplicate_merged" : "sent";
-      update.pms_lead_id = result.pmsLeadId;
+
+    try {
+      const clientId = await upsertClient(parsed, row.id as string);
+      update.pms_status = "sent";
+      update.pms_lead_id = clientId;
       update.pms_sent_at = new Date().toISOString();
       update.pms_error = null;
-    } else {
+    } catch (e) {
       update.pms_status = "failed";
-      update.pms_error = result.error;
+      update.pms_error = e instanceof Error ? e.message : String(e);
     }
 
     await supabaseAdmin.from("intake_submissions").update(update).eq("id", row.id);
-    return { ok: result.ok, error: result.ok ? null : result.error };
+    return { ok: update.pms_status === "sent", error: update.pms_error ?? null };
   });
