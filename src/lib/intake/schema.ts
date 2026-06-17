@@ -85,6 +85,7 @@ const optionalCommon = z
         acidityTriggers: z.array(z.string().max(40)).max(10).optional(),
         acidityRating: ratingSchema.optional(),
         bloatingRating: ratingSchema.optional(),
+        constipationRating: ratingSchema.optional(),
       })
       .optional(),
     foodPattern: z
@@ -105,7 +106,7 @@ const optionalCommon = z
         stress: ratingSchema.optional(),
         screenTimeHrs: z.number().min(0).max(24).optional(),
         smoking: z.object({ active: z.boolean(), frequency: z.string().max(40).optional() }).optional(),
-        alcohol: z.object({ active: z.boolean(), frequency: z.string().max(40).optional() }).optional(),
+        alcohol: z.object({ active: z.boolean(), frequency: z.string().max(40).optional(), drinksPerSession: z.string().max(40).optional() }).optional(),
         shiftWork: z.boolean().optional(),
         travelFrequency: z.string().max(40).optional(),
       })

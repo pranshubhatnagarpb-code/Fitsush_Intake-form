@@ -472,15 +472,15 @@ export function IntakeWizard() {
       render: () => (
         <div className="space-y-6">
           {([
-            ["rSleep", "Sleep quality"],
-            ["rDigestion", "Digestion"],
-            ["rEnergy", "Daily energy"],
-            ["rFatigue", "Fatigue level"],
-            ["rSkin", "Skin health"],
-            ["rHair", "Hair health"],
-          ] as const).map(([k, label]) => (
+            ["rSleep", "Sleep quality", "5 = sleeping very well"],
+            ["rDigestion", "Digestion", "5 = excellent digestion"],
+            ["rEnergy", "Daily energy", "5 = high energy all day"],
+            ["rFatigue", "Fatigue level", "1 = always tired · 5 = rarely tired"],
+            ["rSkin", "Skin health", "5 = clear, healthy skin"],
+            ["rHair", "Hair health", "5 = strong, healthy hair"],
+          ] as const).map(([k, label, hint]) => (
             <div key={k}>
-              <FieldLabel required>{label}</FieldLabel>
+              <FieldLabel required hint={hint}>{label}</FieldLabel>
               <Rating value={state[k] as number | undefined} onChange={(n) => set(k, n)} />
             </div>
           ))}
@@ -689,12 +689,16 @@ function OptionalSections({ state, set }: { state: WizardState; set: SetFn }) {
       <Section title="Digestion detail">
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           <div>
-            <FieldLabel>Acidity severity (1–5)</FieldLabel>
+            <FieldLabel hint="5 = very severe acidity">Acidity severity (1–5)</FieldLabel>
             <Rating value={state.acidityRating} onChange={(n) => set("acidityRating", n)} />
           </div>
           <div>
-            <FieldLabel>Bloating severity (1–5)</FieldLabel>
+            <FieldLabel hint="5 = very severe bloating">Bloating severity (1–5)</FieldLabel>
             <Rating value={state.bloatingRating} onChange={(n) => set("bloatingRating", n)} />
+          </div>
+          <div>
+            <FieldLabel hint="5 = very severe constipation">Constipation severity (1–5)</FieldLabel>
+            <Rating value={state.constipationRating} onChange={(n) => set("constipationRating", n)} />
           </div>
         </div>
         <div>
@@ -768,6 +772,7 @@ function OptionalSections({ state, set }: { state: WizardState; set: SetFn }) {
             options={[
               "north indian",
               "south indian",
+              "street food / chaat",
               "continental",
               "chinese",
               "italian",
@@ -779,6 +784,7 @@ function OptionalSections({ state, set }: { state: WizardState; set: SetFn }) {
             value={state.cuisines}
             onChange={(v) => set("cuisines", v as string[])}
             multi
+            allowOther
           />
         </div>
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
@@ -871,7 +877,7 @@ function OptionalSections({ state, set }: { state: WizardState; set: SetFn }) {
       {!isChild && (
         <Section title="Lifestyle depth">
           <div>
-            <FieldLabel>Stress level (1–5)</FieldLabel>
+            <FieldLabel hint="5 = very high stress">Stress level (1–5)</FieldLabel>
             <Rating value={state.stress} onChange={(n) => set("stress", n)} />
           </div>
           <div>
@@ -890,12 +896,34 @@ function OptionalSections({ state, set }: { state: WizardState; set: SetFn }) {
             <FieldLabel>Do you drink alcohol?</FieldLabel>
             <YesNo value={state.alcoholActive} onChange={(v) => set("alcoholActive", v)} />
             {state.alcoholActive ? (
-              <Input
-                placeholder="How often?"
-                value={state.alcoholFreq ?? ""}
-                onChange={(e) => set("alcoholFreq", e.target.value)}
-                className="mt-3 h-12"
-              />
+              <div className="mt-4 space-y-4">
+                <div>
+                  <FieldLabel>How often?</FieldLabel>
+                  <Segmented
+                    options={[
+                      { value: "occasionally", label: "Occasionally" },
+                      { value: "1-2x/week", label: "1–2x/week" },
+                      { value: "3-5x/week", label: "3–5x/week" },
+                      { value: "daily", label: "Daily" },
+                    ]}
+                    value={state.alcoholFreq as "occasionally" | "1-2x/week" | "3-5x/week" | "daily" | undefined}
+                    onChange={(v) => set("alcoholFreq", v)}
+                  />
+                </div>
+                <div>
+                  <FieldLabel>How much in one sitting?</FieldLabel>
+                  <Segmented
+                    options={[
+                      { value: "1-2 drinks", label: "1–2 drinks" },
+                      { value: "3-4 drinks", label: "3–4 drinks" },
+                      { value: "5-6 drinks", label: "5–6 drinks" },
+                      { value: "7+ drinks", label: "7+ drinks" },
+                    ]}
+                    value={state.alcoholDrinksPerSession as "1-2 drinks" | "3-4 drinks" | "5-6 drinks" | "7+ drinks" | undefined}
+                    onChange={(v) => set("alcoholDrinksPerSession", v)}
+                  />
+                </div>
+              </div>
             ) : null}
           </div>
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
@@ -1047,7 +1075,7 @@ function FemaleSection({ state, set }: { state: WizardState; set: SetFn }) {
         />
       </div>
       <div>
-        <FieldLabel>Pain severity (1–5)</FieldLabel>
+        <FieldLabel hint="5 = very severe pain">Pain severity (1–5)</FieldLabel>
         <Rating value={state.painSeverity} onChange={(n) => set("painSeverity", n)} />
       </div>
       <div>
@@ -1164,7 +1192,7 @@ function MaleSection({ state, set }: { state: WizardState; set: SetFn }) {
         />
       </div>
       <div>
-        <FieldLabel>Libido (1–5)</FieldLabel>
+        <FieldLabel hint="5 = very high libido">Libido (1–5)</FieldLabel>
         <Rating value={state.libido} onChange={(n) => set("libido", n)} />
       </div>
       <div>
@@ -1229,23 +1257,23 @@ function ChildSection({ state, set }: { state: WizardState; set: SetFn }) {
       </div>
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
         <div>
-          <FieldLabel>Stamina (1–5)</FieldLabel>
+          <FieldLabel hint="5 = excellent stamina">Stamina (1–5)</FieldLabel>
           <Rating value={state.stamina} onChange={(n) => set("stamina", n)} />
         </div>
         <div>
-          <FieldLabel>Attention span (1–5)</FieldLabel>
+          <FieldLabel hint="5 = excellent attention span">Attention span (1–5)</FieldLabel>
           <Rating value={state.attentionSpan} onChange={(n) => set("attentionSpan", n)} />
         </div>
         <div>
-          <FieldLabel>Memory (1–5)</FieldLabel>
+          <FieldLabel hint="5 = excellent memory">Memory (1–5)</FieldLabel>
           <Rating value={state.memory} onChange={(n) => set("memory", n)} />
         </div>
         <div>
-          <FieldLabel>Focus (1–5)</FieldLabel>
+          <FieldLabel hint="5 = excellent focus">Focus (1–5)</FieldLabel>
           <Rating value={state.focus} onChange={(n) => set("focus", n)} />
         </div>
         <div>
-          <FieldLabel>Picky eater (1–5)</FieldLabel>
+          <FieldLabel hint="5 = extremely picky">Picky eater (1–5)</FieldLabel>
           <Rating value={state.pickyEater} onChange={(n) => set("pickyEater", n)} />
         </div>
       </div>
@@ -1312,6 +1340,7 @@ function ChildSection({ state, set }: { state: WizardState; set: SetFn }) {
           value={state.outdoorSports}
           onChange={(v) => set("outdoorSports", v as string[])}
           multi
+          allowOther
         />
       </div>
       <div>
@@ -1324,6 +1353,7 @@ function ChildSection({ state, set }: { state: WizardState; set: SetFn }) {
           value={state.indoorSports}
           onChange={(v) => set("indoorSports", v as string[])}
           multi
+          allowOther
         />
       </div>
       <div>

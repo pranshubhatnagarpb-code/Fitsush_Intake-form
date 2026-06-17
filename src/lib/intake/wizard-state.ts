@@ -47,6 +47,7 @@ export type WizardState = {
   acidityTriggers: string[];
   acidityRating?: number;
   bloatingRating?: number;
+  constipationRating?: number;
   // blood / inflammation
   bloodParameters: string[];
   inflammationConcerns?: boolean;
@@ -64,6 +65,7 @@ export type WizardState = {
   smokingFreq?: string;
   alcoholActive?: boolean;
   alcoholFreq?: string;
+  alcoholDrinksPerSession?: string;
   shiftWork?: boolean;
   travelFrequency?: string;
   notes?: string;
@@ -187,6 +189,7 @@ export function buildPayload(s: WizardState): SubmissionInput {
       acidityTriggers: s.acidityTriggers,
       acidityRating: s.acidityRating,
       bloatingRating: s.bloatingRating,
+      constipationRating: s.constipationRating,
     }),
     foodPattern: stripEmpty({
       dietType: s.dietType,
@@ -206,7 +209,7 @@ export function buildPayload(s: WizardState): SubmissionInput {
           : undefined,
       alcohol:
         s.alcoholActive !== undefined
-          ? { active: s.alcoholActive, frequency: s.alcoholFreq }
+          ? { active: s.alcoholActive, frequency: s.alcoholFreq, drinksPerSession: s.alcoholDrinksPerSession }
           : undefined,
       shiftWork: s.shiftWork,
       travelFrequency: s.travelFrequency,

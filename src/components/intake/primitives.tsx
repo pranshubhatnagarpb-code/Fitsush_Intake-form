@@ -37,15 +37,22 @@ export function ChipGroup<T extends string>({
   onChange,
   multi,
   max,
+  allowOther,
 }: {
   options: { value: T; label: string }[];
   value: T | T[] | undefined;
   onChange: (v: T | T[]) => void;
   multi?: boolean;
   max?: number;
+  allowOther?: boolean;
 }) {
+  const [showInput, setShowInput] = React.useState(false);
+  const [otherText, setOtherText] = React.useState("");
+  const inputRef = React.useRef<HTMLInputElement>(null);
+
   const isActive = (v: T) =>
     multi ? Array.isArray(value) && value.includes(v) : value === v;
+
   const toggle = (v: T) => {
     if (!multi) return onChange(v);
     const arr = Array.isArray(value) ? [...value] : [];
@@ -54,6 +61,28 @@ export function ChipGroup<T extends string>({
     else if (!max || arr.length < max) arr.push(v);
     onChange(arr);
   };
+
+  const predefinedValues = new Set(options.map((o) => o.value));
+  const customValues =
+    multi && Array.isArray(value)
+      ? (value as string[]).filter((v) => !predefinedValues.has(v as T))
+      : [];
+
+  const commitOther = () => {
+    const trimmed = otherText.trim();
+    if (!trimmed) { setShowInput(false); return; }
+    const arr = Array.isArray(value) ? [...(value as string[])] : [];
+    if (!arr.includes(trimmed)) arr.push(trimmed);
+    onChange(arr as T[]);
+    setOtherText("");
+    setShowInput(false);
+  };
+
+  const openInput = () => {
+    setShowInput(true);
+    setTimeout(() => inputRef.current?.focus(), 0);
+  };
+
   return (
     <div className="flex flex-wrap gap-2">
       {options.map((o) => (
@@ -61,6 +90,37 @@ export function ChipGroup<T extends string>({
           {o.label}
         </Chip>
       ))}
+      {allowOther && multi && customValues.map((v) => (
+        <Chip key={v} active onClick={() => toggle(v as T)}>
+          {v} ×
+        </Chip>
+      ))}
+      {allowOther && multi && !showInput && (
+        <Chip onClick={openInput}>+ Other</Chip>
+      )}
+      {allowOther && multi && showInput && (
+        <div className="flex items-center gap-1">
+          <input
+            ref={inputRef}
+            type="text"
+            value={otherText}
+            onChange={(e) => setOtherText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") { e.preventDefault(); commitOther(); }
+              if (e.key === "Escape") { setShowInput(false); setOtherText(""); }
+            }}
+            placeholder="Type & press Enter"
+            className="min-h-10 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+          />
+          <button
+            type="button"
+            onClick={commitOther}
+            className="min-h-10 rounded-full border border-primary bg-primary px-3 py-2 text-sm font-medium text-primary-foreground"
+          >
+            Add
+          </button>
+        </div>
+      )}
     </div>
   );
 }
