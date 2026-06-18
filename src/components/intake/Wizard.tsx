@@ -2,8 +2,7 @@ import * as React from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, ArrowRight, Check, Loader2 } from "lucide-react";
-// @ts-ignore — Vite resolves this correctly at build time
-import mkrLogo from "@/MKR Logo.webp";
+import mkrLogo from "@/mkr-logo.webp";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
