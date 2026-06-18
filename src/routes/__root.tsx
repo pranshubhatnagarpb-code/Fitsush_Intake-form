@@ -39,10 +39,10 @@ export const Route = createRootRoute({
       { name: "twitter:card", content: "summary" },
     ],
     links: [
-      {
-        rel: "stylesheet",
-        href: appCss,
-      },
+      { rel: "stylesheet", href: appCss },
+      { rel: "manifest", href: "/manifest.json" },
+      { rel: "icon", type: "image/svg+xml", href: "/icon.svg" },
+      { rel: "apple-touch-icon", href: "/icon.svg" },
     ],
   }),
   shellComponent: RootShell,
