@@ -3,6 +3,9 @@ import { Toaster } from "@/components/ui/sonner";
 
 import appCss from "../styles.css?url";
 
+const SITE_URL = "https://intake.malikakabrarathi.com";
+const OG_IMAGE_URL = `${SITE_URL}/og-image.png`;
+
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -36,7 +39,16 @@ export const Route = createRootRoute({
       { property: "og:title", content: "MKR Clinic — Nutrition Intake" },
       { property: "og:description", content: "Start your personalised nutrition plan in a few thoughtful steps." },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
+      { property: "og:url", content: SITE_URL },
+      { property: "og:site_name", content: "MKR Clinic" },
+      { property: "og:image", content: OG_IMAGE_URL },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
+      { property: "og:image:alt", content: "MKR Clinic — Nutrition Intake" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "MKR Clinic — Nutrition Intake" },
+      { name: "twitter:description", content: "Start your personalised nutrition plan in a few thoughtful steps." },
+      { name: "twitter:image", content: OG_IMAGE_URL },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
