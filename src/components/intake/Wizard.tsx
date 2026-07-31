@@ -666,6 +666,7 @@ export function IntakeWizard() {
   }, [safeStepIdx, stepIdx]);
   const step = steps[safeStepIdx];
   const total = steps.length;
+  const isLast = safeStepIdx === total - 1;
   const progress = ((safeStepIdx + 1) / total) * 100;
 
   const handleNext = async () => {
@@ -734,55 +735,86 @@ export function IntakeWizard() {
 
       {/* Sticky bottom nav */}
       <nav className="fixed inset-x-0 bottom-0 z-10 border-t bg-background/95 backdrop-blur">
-        <div className="mx-auto flex max-w-2xl items-center justify-between gap-3 px-4 py-3">
-          <Button
-            type="button"
-            variant="ghost"
-            disabled={safeStepIdx === 0 || submitting}
-            onClick={() => setStepIdx((i) => Math.max(0, i - 1))}
-          >
-            <ArrowLeft /> Back
-          </Button>
+        <div className="mx-auto max-w-2xl px-4 py-3">
+          {isLast && (
+            <button
+              type="button"
+              onClick={handleSkipAndSubmit}
+              disabled={submitting}
+              className="mb-2 block w-full text-center text-sm font-medium text-muted-foreground underline-offset-4 hover:underline disabled:opacity-50 sm:hidden"
+            >
+              Skip & submit
+            </button>
+          )}
+          <div className="flex items-center justify-between gap-3">
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={safeStepIdx === 0 || submitting}
+              onClick={() => setStepIdx((i) => Math.max(0, i - 1))}
+            >
+              <ArrowLeft /> Back
+            </Button>
 
-          {safeStepIdx === total - 1 ? (
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={handleSkipAndSubmit}
-                disabled={submitting}
-              >
-                Skip & submit
-              </Button>
+            {isLast ? (
+              <>
+                <div className="hidden items-center gap-2 sm:flex">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={handleSkipAndSubmit}
+                    disabled={submitting}
+                  >
+                    Skip & submit
+                  </Button>
+                  <Button
+                    type="button"
+                    size="lg"
+                    onClick={handleSubmit}
+                    disabled={submitting}
+                    className="rounded-full px-6"
+                  >
+                    {submitting ? (
+                      <>
+                        <Loader2 className="animate-spin" /> Submitting…
+                      </>
+                    ) : (
+                      <>
+                        Submit <Check />
+                      </>
+                    )}
+                  </Button>
+                </div>
+                <Button
+                  type="button"
+                  size="lg"
+                  onClick={handleSubmit}
+                  disabled={submitting}
+                  className="rounded-full px-6 sm:hidden"
+                >
+                  {submitting ? (
+                    <>
+                      <Loader2 className="animate-spin" /> Submitting…
+                    </>
+                  ) : (
+                    <>
+                      Submit <Check />
+                    </>
+                  )}
+                </Button>
+              </>
+            ) : (
               <Button
                 type="button"
                 size="lg"
-                onClick={handleSubmit}
+                onClick={handleNext}
                 disabled={submitting}
                 className="rounded-full px-6"
               >
-                {submitting ? (
-                  <>
-                    <Loader2 className="animate-spin" /> Submitting…
-                  </>
-                ) : (
-                  <>
-                    Submit <Check />
-                  </>
-                )}
+                Continue <ArrowRight />
               </Button>
-            </div>
-          ) : (
-            <Button
-              type="button"
-              size="lg"
-              onClick={handleNext}
-              disabled={submitting}
-              className="rounded-full px-6"
-            >
-              Continue <ArrowRight />
-            </Button>
-          )}
+            )}
+          </div>
         </div>
       </nav>
     </div>
@@ -1605,23 +1637,23 @@ function MedicationsEditor({ state, set }: { state: WizardState; set: SetFn }) {
         <p className="text-sm text-muted-foreground">None added yet.</p>
       ) : null}
       {meds.map((m, i) => (
-        <div key={i} className="grid grid-cols-12 gap-2">
+        <div key={i} className="flex items-center gap-2">
           <Input
-            className="col-span-6 h-11"
+            className="h-11 min-w-0 flex-[3]"
             placeholder="Name"
             value={m.name}
             onChange={(e) => update(i, { name: e.target.value })}
           />
           <Input
-            className="col-span-5 h-11"
-            placeholder="Frequency"
+            className="h-11 min-w-0 flex-[2]"
+            placeholder="Freq."
             value={m.frequency ?? ""}
             onChange={(e) => update(i, { frequency: e.target.value })}
           />
           <button
             type="button"
             onClick={() => remove(i)}
-            className="col-span-1 rounded-md text-sm text-muted-foreground hover:text-destructive"
+            className="shrink-0 rounded-md p-1 text-sm text-muted-foreground hover:text-destructive"
             aria-label="Remove"
           >
             ✕
@@ -1653,24 +1685,24 @@ function DailyMealsEditor({ state, set }: { state: WizardState; set: SetFn }) {
     set("dailyMeals", { ...meals, [key]: { ...meals[key], ...patch } });
   };
   return (
-    <div className="space-y-2">
+    <div className="space-y-4">
       {MEAL_SLOTS.map(([key, label, placeholder]) => (
-        <div key={key} className="grid grid-cols-12 items-center gap-2">
-          <span className="col-span-3 text-sm font-medium text-muted-foreground sm:col-span-2">
-            {label}
-          </span>
-          <Input
-            type="time"
-            className="col-span-4 h-11 sm:col-span-3"
-            value={meals[key].time ?? ""}
-            onChange={(e) => update(key, { time: e.target.value })}
-          />
-          <Input
-            className="col-span-5 h-11 sm:col-span-7"
-            placeholder={placeholder}
-            value={meals[key].description ?? ""}
-            onChange={(e) => update(key, { description: e.target.value })}
-          />
+        <div key={key} className="space-y-1.5">
+          <span className="text-sm font-medium text-muted-foreground">{label}</span>
+          <div className="flex gap-2">
+            <Input
+              type="time"
+              className="h-11 w-[7.5rem] shrink-0"
+              value={meals[key].time ?? ""}
+              onChange={(e) => update(key, { time: e.target.value })}
+            />
+            <Input
+              className="h-11 min-w-0 flex-1"
+              placeholder={placeholder}
+              value={meals[key].description ?? ""}
+              onChange={(e) => update(key, { description: e.target.value })}
+            />
+          </div>
         </div>
       ))}
     </div>

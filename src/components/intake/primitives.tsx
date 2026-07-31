@@ -135,14 +135,14 @@ export function Segmented<T extends string>({
   onChange: (v: T) => void;
 }) {
   return (
-    <div className="inline-flex flex-wrap gap-1 rounded-2xl border bg-muted p-1">
+    <div className="inline-flex flex-wrap gap-2 rounded-2xl border bg-muted p-1">
       {options.map((o) => (
         <button
           key={o.value}
           type="button"
           onClick={() => onChange(o.value)}
           className={cn(
-            "min-h-10 rounded-xl px-4 text-sm font-medium transition-colors",
+            "min-h-10 shrink-0 rounded-xl px-4 text-sm font-medium transition-colors",
             value === o.value
               ? "bg-primary text-primary-foreground shadow-sm"
               : "text-muted-foreground hover:text-foreground",
