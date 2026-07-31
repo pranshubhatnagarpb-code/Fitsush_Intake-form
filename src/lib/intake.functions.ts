@@ -49,6 +49,7 @@ async function upsertClient(input: SubmissionInput, submissionId: string): Promi
   const payload: Record<string, unknown> = {
     name: input.required.fullName,
     date_of_birth: input.required.dob ?? null,
+    age: input.required.age ?? null,
     address: input.required.city ?? null,
     gender: isChild ? null : input.branch,
     weight: input.required.body.weightKg,

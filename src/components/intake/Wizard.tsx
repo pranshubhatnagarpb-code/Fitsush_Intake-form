@@ -66,6 +66,7 @@ const CONDITIONS = [
   "thyroid",
   "cholesterol",
   "PCOS/PCOD",
+  "IBS",
   "cardiac",
   "kidney",
   "liver",
@@ -141,14 +142,66 @@ export function IntakeWizard() {
               />
             </div>
           )}
+          {state.isChild === true && (
+            <div>
+              <FieldLabel required>Child's gender</FieldLabel>
+              <Segmented
+                options={[
+                  { value: "female", label: "Female" },
+                  { value: "male", label: "Male" },
+                ]}
+                value={state.childGender}
+                onChange={(v) => set("childGender", v)}
+              />
+            </div>
+          )}
         </div>
       ),
-      validate: () =>
-        !state.branch
-          ? state.isChild
-            ? null
-            : "Pick who this is for and gender"
-          : null,
+      validate: () => {
+        if (!state.branch) return state.isChild ? null : "Pick who this is for and gender";
+        if (state.isChild && !state.childGender) return "Pick the child's gender";
+        return null;
+      },
+    },
+    {
+      id: "special-situations",
+      title: "A few quick screening questions",
+      subtitle: "These change what we ask you next.",
+      render: () => (
+        <div className="space-y-6">
+          <div>
+            <FieldLabel required>
+              {isChild
+                ? "Does the child have a current or past cancer diagnosis / treatment?"
+                : "Do you have a current or past cancer diagnosis / treatment?"}
+            </FieldLabel>
+            <YesNo
+              value={state.hasCancerDiagnosis}
+              onChange={(v) => set("hasCancerDiagnosis", v)}
+            />
+          </div>
+          {state.branch === "female" && (
+            <div>
+              <FieldLabel required>Pregnancy / breastfeeding status</FieldLabel>
+              <Segmented
+                options={[
+                  { value: "none", label: "None" },
+                  { value: "trying", label: "Trying to conceive" },
+                  { value: "pregnant", label: "Pregnant" },
+                  { value: "lactating", label: "Breastfeeding" },
+                ]}
+                value={state.pregnancyStatus}
+                onChange={(v) => set("pregnancyStatus", v)}
+              />
+            </div>
+          )}
+        </div>
+      ),
+      validate: () => {
+        if (state.hasCancerDiagnosis === undefined) return "Please answer the cancer diagnosis question";
+        if (state.branch === "female" && !state.pregnancyStatus) return "Please select a pregnancy status";
+        return null;
+      },
     },
     {
       id: "identity",
@@ -218,6 +271,16 @@ export function IntakeWizard() {
               className="h-12"
             />
           </div>
+          <div>
+            <Label htmlFor="address">Address</Label>
+            <Input
+              id="address"
+              value={state.address ?? ""}
+              onChange={(e) => set("address", e.target.value)}
+              placeholder="Street address (optional)"
+              className="h-12"
+            />
+          </div>
 
           {!isChild ? (
             <>
@@ -248,6 +311,42 @@ export function IntakeWizard() {
               <p className="text-xs text-muted-foreground">
                 Phone or email is required — both recommended.
               </p>
+              <div>
+                <Label htmlFor="profession">Profession</Label>
+                <Input
+                  id="profession"
+                  value={state.profession ?? ""}
+                  onChange={(e) => set("profession", e.target.value)}
+                  placeholder="e.g. Teacher, Engineer"
+                  className="h-12"
+                />
+              </div>
+              <div>
+                <FieldLabel>Marital status</FieldLabel>
+                <Segmented
+                  options={[
+                    { value: "single", label: "Single" },
+                    { value: "married", label: "Married" },
+                    { value: "divorced", label: "Divorced" },
+                    { value: "widowed", label: "Widowed" },
+                  ]}
+                  value={state.maritalStatus}
+                  onChange={(v) => set("maritalStatus", v)}
+                />
+              </div>
+              <div>
+                <FieldLabel>Children</FieldLabel>
+                <Segmented
+                  options={[
+                    { value: "none", label: "None" },
+                    { value: "1", label: "1" },
+                    { value: "2", label: "2" },
+                    { value: "3+", label: "3+" },
+                  ]}
+                  value={state.childrenCount}
+                  onChange={(v) => set("childrenCount", v)}
+                />
+              </div>
             </>
           ) : (
             <div className="space-y-4 rounded-2xl border bg-secondary/40 p-4">
@@ -298,6 +397,16 @@ export function IntakeWizard() {
               </div>
             </div>
           )}
+          <div>
+            <Label htmlFor="referredBy">Referred by</Label>
+            <Input
+              id="referredBy"
+              value={state.referredBy ?? ""}
+              onChange={(e) => set("referredBy", e.target.value)}
+              placeholder="Friend, Instagram, etc."
+              className="h-12"
+            />
+          </div>
         </div>
       ),
       validate: () => {
@@ -339,6 +448,57 @@ export function IntakeWizard() {
       ),
       validate: () => (state.consent ? null : "Please accept to continue"),
     },
+    ...(state.hasCancerDiagnosis
+      ? [
+          {
+            id: "oncology-details",
+            title: "Oncology / cancer nutrition",
+            subtitle: "Details about the diagnosis and treatment.",
+            render: () => <OncologyStepContent state={state} set={set} />,
+            validate: () => null,
+          } satisfies StepDef,
+        ]
+      : []),
+    ...(state.branch === "female" && state.pregnancyStatus === "trying"
+      ? [
+          {
+            id: "fertility-details",
+            title: "Fertility details",
+            render: () => <FertilityStepContent state={state} set={set} />,
+            validate: () => null,
+          } satisfies StepDef,
+        ]
+      : []),
+    ...(state.branch === "female" && state.pregnancyStatus === "pregnant"
+      ? [
+          {
+            id: "pregnancy-details",
+            title: "Pregnancy details",
+            render: () => <PregnancyStepContent state={state} set={set} />,
+            validate: () => null,
+          } satisfies StepDef,
+        ]
+      : []),
+    ...(state.branch === "female" && state.pregnancyStatus === "lactating"
+      ? [
+          {
+            id: "lactation-details",
+            title: "Lactation details",
+            render: () => <LactationStepContent state={state} set={set} />,
+            validate: () => null,
+          } satisfies StepDef,
+        ]
+      : []),
+    ...(isChild && (state.age ?? 99) < 3
+      ? [
+          {
+            id: "infant-feeding",
+            title: "Infant feeding history",
+            render: () => <InfantFeedingStepContent state={state} set={set} />,
+            validate: () => null,
+          } satisfies StepDef,
+        ]
+      : []),
     {
       id: "goal",
       title: "What's the primary goal?",
@@ -500,9 +660,13 @@ export function IntakeWizard() {
     },
   ];
 
-  const step = steps[stepIdx];
+  const safeStepIdx = Math.min(stepIdx, steps.length - 1);
+  React.useEffect(() => {
+    if (safeStepIdx !== stepIdx) setStepIdx(safeStepIdx);
+  }, [safeStepIdx, stepIdx]);
+  const step = steps[safeStepIdx];
   const total = steps.length;
-  const progress = ((stepIdx + 1) / total) * 100;
+  const progress = ((safeStepIdx + 1) / total) * 100;
 
   const handleNext = async () => {
     const err = step.validate();
@@ -510,7 +674,7 @@ export function IntakeWizard() {
       toast.error(err);
       return;
     }
-    if (stepIdx < total - 1) {
+    if (safeStepIdx < total - 1) {
       setStepIdx((i) => i + 1);
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
@@ -549,7 +713,7 @@ export function IntakeWizard() {
               </div>
             </div>
             <span className="text-xs text-muted-foreground">
-              Step {stepIdx + 1} of {total} · {stepIdx === total - 1 ? "Optional" : "Required"}
+              Step {safeStepIdx + 1} of {total} · {safeStepIdx === total - 1 ? "Optional" : "Required"}
             </span>
           </div>
           <Progress value={progress} className="h-1" />
@@ -574,13 +738,13 @@ export function IntakeWizard() {
           <Button
             type="button"
             variant="ghost"
-            disabled={stepIdx === 0 || submitting}
+            disabled={safeStepIdx === 0 || submitting}
             onClick={() => setStepIdx((i) => Math.max(0, i - 1))}
           >
             <ArrowLeft /> Back
           </Button>
 
-          {stepIdx === total - 1 ? (
+          {safeStepIdx === total - 1 ? (
             <div className="flex items-center gap-2">
               <Button
                 type="button"
@@ -669,6 +833,27 @@ function OptionalSections({ state, set }: { state: WizardState; set: SetFn }) {
           onChange={(v) => set("medicalHistory", v as string[])}
           multi
         />
+        <div>
+          <Label htmlFor="allergies">Allergies / intolerances</Label>
+          <Input
+            id="allergies"
+            value={state.allergies ?? ""}
+            onChange={(e) => set("allergies", e.target.value)}
+            placeholder="e.g. Gluten, Lactose, Nuts"
+            className="mt-2 h-12"
+          />
+        </div>
+        <div>
+          <Label htmlFor="surgicalHistory">Surgical history</Label>
+          <Textarea
+            id="surgicalHistory"
+            rows={3}
+            placeholder="Any surgeries or procedures..."
+            value={state.surgicalHistory ?? ""}
+            onChange={(e) => set("surgicalHistory", e.target.value)}
+            className="mt-2"
+          />
+        </div>
       </Section>
 
       <Section title="Family history">
@@ -683,6 +868,142 @@ function OptionalSections({ state, set }: { state: WizardState; set: SetFn }) {
 
       <Section title="Medications & supplements">
         <MedicationsEditor state={state} set={set} />
+      </Section>
+
+      <Section title="Body measurements & vitals">
+        <div>
+          <FieldLabel>Blood group</FieldLabel>
+          <Segmented
+            options={[
+              { value: "A+", label: "A+" },
+              { value: "A-", label: "A-" },
+              { value: "B+", label: "B+" },
+              { value: "B-", label: "B-" },
+              { value: "AB+", label: "AB+" },
+              { value: "AB-", label: "AB-" },
+              { value: "O+", label: "O+" },
+              { value: "O-", label: "O-" },
+              { value: "unknown", label: "Not sure" },
+            ]}
+            value={state.bloodGroup}
+            onChange={(v) => set("bloodGroup", v)}
+          />
+        </div>
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+          <div>
+            <FieldLabel>Target weight</FieldLabel>
+            <NumberStepper
+              value={state.targetWeightKg}
+              onChange={(v) => set("targetWeightKg", v)}
+              min={2}
+              max={300}
+              step={0.5}
+              suffix="kg"
+            />
+          </div>
+          <div>
+            <FieldLabel>Waist at navel</FieldLabel>
+            <NumberStepper
+              value={state.waistNavelCm}
+              onChange={(v) => set("waistNavelCm", v)}
+              min={20}
+              max={200}
+              suffix="cm"
+            />
+          </div>
+          <div>
+            <FieldLabel>Waist at thinnest</FieldLabel>
+            <NumberStepper
+              value={state.waistThinnestCm}
+              onChange={(v) => set("waistThinnestCm", v)}
+              min={20}
+              max={200}
+              suffix="cm"
+            />
+          </div>
+          <div>
+            <FieldLabel>Hip</FieldLabel>
+            <NumberStepper
+              value={state.hipCm}
+              onChange={(v) => set("hipCm", v)}
+              min={20}
+              max={200}
+              suffix="cm"
+            />
+          </div>
+          <div>
+            <FieldLabel>Neck</FieldLabel>
+            <NumberStepper
+              value={state.neckCm}
+              onChange={(v) => set("neckCm", v)}
+              min={10}
+              max={100}
+              suffix="cm"
+            />
+          </div>
+          <div>
+            <FieldLabel>Pulse rate</FieldLabel>
+            <NumberStepper
+              value={state.pulseRate}
+              onChange={(v) => set("pulseRate", v)}
+              min={20}
+              max={250}
+              suffix="bpm"
+            />
+          </div>
+        </div>
+        <div>
+          <Label htmlFor="bloodPressure">Blood pressure</Label>
+          <Input
+            id="bloodPressure"
+            value={state.bloodPressure ?? ""}
+            onChange={(e) => set("bloodPressure", e.target.value)}
+            placeholder="120/80"
+            className="mt-2 h-12"
+          />
+        </div>
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+          <div>
+            <FieldLabel>Heaviest adult weight</FieldLabel>
+            <NumberStepper
+              value={state.heaviestWeightKg}
+              onChange={(v) => set("heaviestWeightKg", v)}
+              min={2}
+              max={400}
+              suffix="kg"
+            />
+          </div>
+          <div>
+            <FieldLabel>Lightest adult weight</FieldLabel>
+            <NumberStepper
+              value={state.lightestWeightKg}
+              onChange={(v) => set("lightestWeightKg", v)}
+              min={2}
+              max={400}
+              suffix="kg"
+            />
+          </div>
+          <div>
+            <FieldLabel>Weight 6 months ago</FieldLabel>
+            <NumberStepper
+              value={state.weight6moAgoKg}
+              onChange={(v) => set("weight6moAgoKg", v)}
+              min={2}
+              max={400}
+              suffix="kg"
+            />
+          </div>
+          <div>
+            <FieldLabel>Weight 3 years ago</FieldLabel>
+            <NumberStepper
+              value={state.weight3yrAgoKg}
+              onChange={(v) => set("weight3yrAgoKg", v)}
+              min={2}
+              max={400}
+              suffix="kg"
+            />
+          </div>
+        </div>
       </Section>
 
       <Section title="Digestion detail">
@@ -748,6 +1069,43 @@ function OptionalSections({ state, set }: { state: WizardState; set: SetFn }) {
             multi
           />
         </div>
+        <div>
+          <FieldLabel>Other digestive symptoms</FieldLabel>
+          <ChipGroup
+            options={["nausea", "vomiting", "reflux / heartburn", "none"].map((v) => ({
+              value: v,
+              label: v,
+            }))}
+            value={state.digestiveSymptoms}
+            onChange={(v) => set("digestiveSymptoms", v as string[])}
+            multi
+          />
+        </div>
+        <div>
+          <FieldLabel>Lunch duration</FieldLabel>
+          <Segmented
+            options={[
+              { value: "under_10", label: "Under 10 min" },
+              { value: "10_20", label: "10–20 min" },
+              { value: "over_20", label: "Over 20 min" },
+            ]}
+            value={state.lunchDuration}
+            onChange={(v) => set("lunchDuration", v)}
+          />
+        </div>
+        <div>
+          <FieldLabel>Daily rituals</FieldLabel>
+          <ChipGroup
+            options={[
+              "drink water on empty stomach",
+              "sit while drinking water",
+              "brush teeth at night",
+            ].map((v) => ({ value: v, label: v }))}
+            value={state.dailyRituals}
+            onChange={(v) => set("dailyRituals", v as string[])}
+            multi
+          />
+        </div>
       </Section>
 
       <Section title="Food pattern">
@@ -758,6 +1116,7 @@ function OptionalSections({ state, set }: { state: WizardState; set: SetFn }) {
               { value: "veg", label: "Veg" },
               { value: "non_veg", label: "Non-veg" },
               { value: "eggetarian", label: "Eggetarian" },
+              { value: "pescatarian", label: "Pescatarian" },
               { value: "vegan", label: "Vegan" },
               { value: "jain", label: "Jain" },
             ]}
@@ -829,6 +1188,19 @@ function OptionalSections({ state, set }: { state: WizardState; set: SetFn }) {
             />
           </div>
           <div>
+            <FieldLabel>Energy / carbonated drinks</FieldLabel>
+            <Segmented
+              options={[
+                { value: "never", label: "Never" },
+                { value: "rarely", label: "Rarely" },
+                { value: "sometimes", label: "Sometimes" },
+                { value: "daily", label: "Daily" },
+              ]}
+              value={state.energyCarbonatedDrinks}
+              onChange={(v) => set("energyCarbonatedDrinks", v)}
+            />
+          </div>
+          <div>
             <FieldLabel>Tea / coffee per day</FieldLabel>
             <NumberStepper
               value={state.teaCoffeePerDay}
@@ -837,6 +1209,113 @@ function OptionalSections({ state, set }: { state: WizardState; set: SetFn }) {
               max={20}
             />
           </div>
+        </div>
+        <div>
+          <Label htmlFor="teaCoffeeFirstCupTime">First cup timing</Label>
+          <Input
+            id="teaCoffeeFirstCupTime"
+            type="time"
+            value={state.teaCoffeeFirstCupTime ?? ""}
+            onChange={(e) => set("teaCoffeeFirstCupTime", e.target.value)}
+            className="mt-2 h-12"
+          />
+        </div>
+        <div>
+          <FieldLabel>Primarily home cooked?</FieldLabel>
+          <Segmented
+            options={[
+              { value: "yes", label: "Yes" },
+              { value: "partially", label: "Partially" },
+              { value: "rarely", label: "Rarely" },
+            ]}
+            value={state.homeCooked}
+            onChange={(v) => set("homeCooked", v)}
+          />
+        </div>
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+          <div>
+            <FieldLabel>Who cooks?</FieldLabel>
+            <Segmented
+              options={[
+                { value: "self", label: "Self" },
+                { value: "family", label: "Family" },
+                { value: "cook_help", label: "Cook / help" },
+                { value: "mix", label: "Mix" },
+              ]}
+              value={state.whoCooks}
+              onChange={(v) => set("whoCooks", v)}
+            />
+          </div>
+          <div>
+            <Label htmlFor="cookingOil">Cooking oil / fat</Label>
+            <Input
+              id="cookingOil"
+              value={state.cookingOil ?? ""}
+              onChange={(e) => set("cookingOil", e.target.value)}
+              placeholder="Ghee, coconut oil..."
+              className="h-12"
+            />
+          </div>
+        </div>
+        <div>
+          <Label htmlFor="foodLikes">Food likes</Label>
+          <Input
+            id="foodLikes"
+            value={state.foodLikes ?? ""}
+            onChange={(e) => set("foodLikes", e.target.value)}
+            placeholder="e.g. Dal, paneer, mangoes"
+            className="mt-2 h-12"
+          />
+        </div>
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+          <div>
+            <Label htmlFor="foodDislikes">Food dislikes</Label>
+            <Input
+              id="foodDislikes"
+              value={state.foodDislikes ?? ""}
+              onChange={(e) => set("foodDislikes", e.target.value)}
+              placeholder="e.g. Bitter gourd"
+              className="h-12"
+            />
+          </div>
+          <div>
+            <Label htmlFor="cravings">Cravings</Label>
+            <Input
+              id="cravings"
+              value={state.cravings ?? ""}
+              onChange={(e) => set("cravings", e.target.value)}
+              placeholder="e.g. Sweets, salty"
+              className="h-12"
+            />
+          </div>
+        </div>
+        <div>
+          <FieldLabel>Eating speed</FieldLabel>
+          <Segmented
+            options={[
+              { value: "slow", label: "Slow" },
+              { value: "moderate", label: "Moderate" },
+              { value: "fast", label: "Fast" },
+            ]}
+            value={state.eatingSpeed}
+            onChange={(v) => set("eatingSpeed", v)}
+          />
+        </div>
+        <div>
+          <FieldLabel>Binge / emotional eating?</FieldLabel>
+          <Segmented
+            options={[
+              { value: "no", label: "No" },
+              { value: "occasionally", label: "Occasionally" },
+              { value: "frequently", label: "Frequently" },
+            ]}
+            value={state.bingeEating}
+            onChange={(v) => set("bingeEating", v)}
+          />
+        </div>
+        <div>
+          <FieldLabel>Typical daily meals</FieldLabel>
+          <DailyMealsEditor state={state} set={set} />
         </div>
       </Section>
 
@@ -875,9 +1354,94 @@ function OptionalSections({ state, set }: { state: WizardState; set: SetFn }) {
 
       {!isChild && (
         <Section title="Lifestyle depth">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+            <div>
+              <Label htmlFor="sleepTime">Sleep time</Label>
+              <Input
+                id="sleepTime"
+                type="time"
+                value={state.sleepTime ?? ""}
+                onChange={(e) => set("sleepTime", e.target.value)}
+                className="mt-2 h-12"
+              />
+            </div>
+            <div>
+              <Label htmlFor="wakeTime">Wake up time</Label>
+              <Input
+                id="wakeTime"
+                type="time"
+                value={state.wakeTime ?? ""}
+                onChange={(e) => set("wakeTime", e.target.value)}
+                className="mt-2 h-12"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+            <div>
+              <FieldLabel>Daily steps</FieldLabel>
+              <NumberStepper
+                value={state.dailySteps}
+                onChange={(v) => set("dailySteps", v)}
+                min={0}
+                max={50000}
+                step={500}
+              />
+            </div>
+            <div>
+              <FieldLabel>Exercise duration</FieldLabel>
+              <Segmented
+                options={[
+                  { value: "none", label: "None" },
+                  { value: "15_30", label: "15–30 min" },
+                  { value: "30_45", label: "30–45 min" },
+                  { value: "45_60", label: "45–60 min" },
+                  { value: "60_plus", label: "60+ min" },
+                ]}
+                value={state.exerciseDuration}
+                onChange={(v) => set("exerciseDuration", v)}
+              />
+            </div>
+          </div>
+          <div>
+            <Label htmlFor="exerciseType">Exercise type</Label>
+            <Input
+              id="exerciseType"
+              value={state.exerciseType ?? ""}
+              onChange={(e) => set("exerciseType", e.target.value)}
+              placeholder="Yoga, walking, gym..."
+              className="mt-2 h-12"
+            />
+          </div>
+          <div>
+            <FieldLabel>Exercise frequency</FieldLabel>
+            <Segmented
+              options={[
+                { value: "daily", label: "Daily" },
+                { value: "4_5_wk", label: "4–5x/wk" },
+                { value: "2_3_wk", label: "2–3x/wk" },
+                { value: "rarely", label: "Rarely" },
+              ]}
+              value={state.exerciseFrequency}
+              onChange={(v) => set("exerciseFrequency", v)}
+            />
+          </div>
           <div>
             <FieldLabel hint="5 = very high stress">Stress level (1–5)</FieldLabel>
             <Rating value={state.stress} onChange={(n) => set("stress", n)} />
+          </div>
+          <div>
+            <FieldLabel>Primary stress source</FieldLabel>
+            <Segmented
+              options={[
+                { value: "work", label: "Work" },
+                { value: "family", label: "Family" },
+                { value: "health", label: "Health" },
+                { value: "financial", label: "Financial" },
+                { value: "multiple", label: "Multiple" },
+              ]}
+              value={state.stressSource}
+              onChange={(v) => set("stressSource", v)}
+            />
           </div>
           <div>
             <FieldLabel>Do you smoke?</FieldLabel>
@@ -943,12 +1507,76 @@ function OptionalSections({ state, set }: { state: WizardState; set: SetFn }) {
               />
             </div>
           </div>
+          <div>
+            <FieldLabel>Wellness rituals</FieldLabel>
+            <ChipGroup
+              options={[
+                "daily sunlight exposure",
+                "cold water shower",
+                "soak dals / millets / nuts",
+              ].map((v) => ({ value: v, label: v }))}
+              value={state.wellnessRituals}
+              onChange={(v) => set("wellnessRituals", v as string[])}
+              multi
+            />
+          </div>
         </Section>
       )}
 
       {state.branch === "female" && <FemaleSection state={state} set={set} />}
       {state.branch === "male" && <MaleSection state={state} set={set} />}
       {state.branch === "child" && <ChildSection state={state} set={set} />}
+
+      <Section title="Goals & expectations">
+        <div>
+          <Label htmlFor="pastAttempts">What have you tried before?</Label>
+          <Textarea
+            id="pastAttempts"
+            rows={3}
+            maxLength={500}
+            placeholder="Diets, programs, apps..."
+            value={state.pastAttempts ?? ""}
+            onChange={(e) => set("pastAttempts", e.target.value)}
+            className="mt-2"
+          />
+        </div>
+        <div>
+          <Label htmlFor="pastAttemptsOutcome">What worked / didn't work?</Label>
+          <Textarea
+            id="pastAttemptsOutcome"
+            rows={3}
+            maxLength={500}
+            placeholder="Share your experience..."
+            value={state.pastAttemptsOutcome ?? ""}
+            onChange={(e) => set("pastAttemptsOutcome", e.target.value)}
+            className="mt-2"
+          />
+        </div>
+        <div>
+          <Label htmlFor="biggestChallenge">Biggest challenge with food or health</Label>
+          <Textarea
+            id="biggestChallenge"
+            rows={3}
+            maxLength={500}
+            placeholder="Be honest — this helps us help you"
+            value={state.biggestChallenge ?? ""}
+            onChange={(e) => set("biggestChallenge", e.target.value)}
+            className="mt-2"
+          />
+        </div>
+        <div>
+          <Label htmlFor="programExpectations">Expectations from this program</Label>
+          <Textarea
+            id="programExpectations"
+            rows={3}
+            maxLength={500}
+            placeholder="What does success look like for you?"
+            value={state.programExpectations ?? ""}
+            onChange={(e) => set("programExpectations", e.target.value)}
+            className="mt-2"
+          />
+        </div>
+      </Section>
 
       <Section title="Anything else">
         <Textarea
@@ -1007,6 +1635,349 @@ function MedicationsEditor({ state, set }: { state: WizardState; set: SetFn }) {
   );
 }
 
+const MEAL_SLOTS = [
+  ["breakfast", "Breakfast", "What do you usually eat?"],
+  ["midMorning", "Mid-Morning", "Snack or fruit?"],
+  ["lunch", "Lunch", "What do you usually eat?"],
+  ["evening", "Evening", "Evening snack?"],
+  ["dinner", "Dinner", "What do you usually eat?"],
+  ["postDinner", "Post-Dinner", "Anything after dinner?"],
+] as const;
+
+function DailyMealsEditor({ state, set }: { state: WizardState; set: SetFn }) {
+  const meals = state.dailyMeals;
+  const update = (
+    key: (typeof MEAL_SLOTS)[number][0],
+    patch: Partial<{ time: string; description: string }>,
+  ) => {
+    set("dailyMeals", { ...meals, [key]: { ...meals[key], ...patch } });
+  };
+  return (
+    <div className="space-y-2">
+      {MEAL_SLOTS.map(([key, label, placeholder]) => (
+        <div key={key} className="grid grid-cols-12 items-center gap-2">
+          <span className="col-span-3 text-sm font-medium text-muted-foreground sm:col-span-2">
+            {label}
+          </span>
+          <Input
+            type="time"
+            className="col-span-4 h-11 sm:col-span-3"
+            value={meals[key].time ?? ""}
+            onChange={(e) => update(key, { time: e.target.value })}
+          />
+          <Input
+            className="col-span-5 h-11 sm:col-span-7"
+            placeholder={placeholder}
+            value={meals[key].description ?? ""}
+            onChange={(e) => update(key, { description: e.target.value })}
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function OncologyStepContent({ state, set }: { state: WizardState; set: SetFn }) {
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+        <div>
+          <Label htmlFor="cancerDiagnosis">Cancer diagnosis</Label>
+          <Input
+            id="cancerDiagnosis"
+            value={state.cancerDiagnosis ?? ""}
+            onChange={(e) => set("cancerDiagnosis", e.target.value)}
+            className="mt-2 h-12"
+          />
+        </div>
+        <div>
+          <Label htmlFor="cancerType">Type of cancer</Label>
+          <Input
+            id="cancerType"
+            value={state.cancerType ?? ""}
+            onChange={(e) => set("cancerType", e.target.value)}
+            className="mt-2 h-12"
+          />
+        </div>
+      </div>
+      <div>
+        <Label htmlFor="cancerDiagnosisDate">Date of diagnosis</Label>
+        <Input
+          id="cancerDiagnosisDate"
+          type="date"
+          max={new Date().toISOString().slice(0, 10)}
+          value={state.cancerDiagnosisDate ?? ""}
+          onChange={(e) => set("cancerDiagnosisDate", e.target.value)}
+          className="mt-2 h-12"
+        />
+      </div>
+      <div>
+        <FieldLabel>Current treatment</FieldLabel>
+        <ChipGroup
+          options={[
+            { value: "chemotherapy", label: "Chemotherapy" },
+            { value: "radiation", label: "Radiation" },
+            { value: "immunotherapy", label: "Immunotherapy" },
+            { value: "surgery", label: "Surgery" },
+            { value: "bone_marrow_transplant", label: "Bone marrow transplant" },
+            { value: "other", label: "Other" },
+          ]}
+          value={state.cancerTreatment}
+          onChange={(v) => set("cancerTreatment", v as string[])}
+          multi
+        />
+      </div>
+      <div>
+        <Label htmlFor="treatmentStage">Treatment cycle / stage</Label>
+        <Input
+          id="treatmentStage"
+          value={state.treatmentStage ?? ""}
+          onChange={(e) => set("treatmentStage", e.target.value)}
+          className="mt-2 h-12"
+        />
+      </div>
+      <div>
+        <FieldLabel>Treatment-related symptoms</FieldLabel>
+        <ChipGroup
+          options={[
+            { value: "loss_of_appetite", label: "Loss of appetite" },
+            { value: "nausea", label: "Nausea" },
+            { value: "vomiting", label: "Vomiting" },
+            { value: "taste_changes", label: "Taste changes" },
+            { value: "mouth_sores", label: "Mouth sores" },
+            { value: "dry_mouth", label: "Dry mouth" },
+            { value: "difficulty_swallowing", label: "Difficulty swallowing" },
+            { value: "early_satiety", label: "Early satiety" },
+            { value: "food_aversion", label: "Food aversion" },
+            { value: "diarrhea", label: "Diarrhea" },
+            { value: "constipation", label: "Constipation" },
+            { value: "fatigue", label: "Fatigue" },
+            { value: "weight_loss", label: "Weight loss" },
+            { value: "weight_gain", label: "Weight gain" },
+          ]}
+          value={state.treatmentSymptoms}
+          onChange={(v) => set("treatmentSymptoms", v as string[])}
+          multi
+        />
+      </div>
+      <div>
+        <Label htmlFor="eatingPatternChanges">Eating pattern changes after treatment</Label>
+        <Textarea
+          id="eatingPatternChanges"
+          rows={3}
+          value={state.eatingPatternChanges ?? ""}
+          onChange={(e) => set("eatingPatternChanges", e.target.value)}
+          className="mt-2"
+        />
+      </div>
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+        <div>
+          <Label htmlFor="treatmentFoodPreferences">Food preferences during treatment</Label>
+          <Textarea
+            id="treatmentFoodPreferences"
+            rows={3}
+            value={state.treatmentFoodPreferences ?? ""}
+            onChange={(e) => set("treatmentFoodPreferences", e.target.value)}
+            className="mt-2"
+          />
+        </div>
+        <div>
+          <Label htmlFor="treatmentFoodIntolerances">Food intolerances during treatment</Label>
+          <Textarea
+            id="treatmentFoodIntolerances"
+            rows={3}
+            value={state.treatmentFoodIntolerances ?? ""}
+            onChange={(e) => set("treatmentFoodIntolerances", e.target.value)}
+            className="mt-2"
+          />
+        </div>
+      </div>
+      <div>
+        <Label htmlFor="oncologySupplements">Nutritional supplements</Label>
+        <Textarea
+          id="oncologySupplements"
+          rows={2}
+          value={state.oncologySupplements ?? ""}
+          onChange={(e) => set("oncologySupplements", e.target.value)}
+          className="mt-2"
+        />
+      </div>
+      <div>
+        <FieldLabel>Tube feeding?</FieldLabel>
+        <YesNo value={state.tubeFeeding} onChange={(v) => set("tubeFeeding", v)} />
+      </div>
+      <div>
+        <FieldLabel>Food safety concerns</FieldLabel>
+        <ChipGroup
+          options={[
+            { value: "raw_sprouts", label: "Raw sprouts" },
+            { value: "street_food", label: "Street food" },
+            { value: "raw_eggs", label: "Raw eggs" },
+            { value: "unpasteurized_dairy", label: "Unpasteurized dairy" },
+            { value: "none", label: "None" },
+          ]}
+          value={state.foodSafetyConcerns}
+          onChange={(v) => set("foodSafetyConcerns", v as string[])}
+          multi
+        />
+      </div>
+    </div>
+  );
+}
+
+function FertilityStepContent({ state, set }: { state: WizardState; set: SetFn }) {
+  return (
+    <div className="space-y-6">
+      <div>
+        <FieldLabel>How long trying to conceive?</FieldLabel>
+        <Segmented
+          options={[
+            { value: "under_6mo", label: "< 6 months" },
+            { value: "6_12mo", label: "6–12 months" },
+            { value: "1_2yr", label: "1–2 years" },
+            { value: "2yr_plus", label: "2+ years" },
+          ]}
+          value={state.fertilityTryingDuration}
+          onChange={(v) => set("fertilityTryingDuration", v)}
+        />
+      </div>
+      <div>
+        <FieldLabel>Fertility treatments</FieldLabel>
+        <Segmented
+          options={[
+            { value: "none", label: "None" },
+            { value: "iui", label: "IUI" },
+            { value: "ivf", label: "IVF" },
+            { value: "other", label: "Other" },
+          ]}
+          value={state.fertilityTreatment}
+          onChange={(v) => set("fertilityTreatment", v)}
+        />
+      </div>
+      <div>
+        <Label htmlFor="fertilityConditions">Diagnosed fertility conditions</Label>
+        <Textarea
+          id="fertilityConditions"
+          rows={3}
+          maxLength={300}
+          placeholder="e.g. Low AMH, endometriosis..."
+          value={state.fertilityConditions ?? ""}
+          onChange={(e) => set("fertilityConditions", e.target.value)}
+          className="mt-2"
+        />
+      </div>
+    </div>
+  );
+}
+
+function PregnancyStepContent({ state, set }: { state: WizardState; set: SetFn }) {
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+        <div>
+          <Label htmlFor="dueDate">Expected due date</Label>
+          <Input
+            id="dueDate"
+            type="date"
+            value={state.dueDate ?? ""}
+            onChange={(e) => set("dueDate", e.target.value)}
+            className="mt-2 h-12"
+          />
+        </div>
+        <div>
+          <FieldLabel>Pre-pregnancy weight</FieldLabel>
+          <NumberStepper
+            value={state.prePregnancyWeightKg}
+            onChange={(v) => set("prePregnancyWeightKg", v)}
+            min={2}
+            max={300}
+            step={0.5}
+            suffix="kg"
+          />
+        </div>
+      </div>
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+        <div>
+          <FieldLabel>Gestational diabetes?</FieldLabel>
+          <YesNo value={state.gestationalDiabetes} onChange={(v) => set("gestationalDiabetes", v)} />
+        </div>
+        <div>
+          <FieldLabel>Pregnancy-induced hypertension?</FieldLabel>
+          <YesNo
+            value={state.pregnancyInducedHypertension}
+            onChange={(v) => set("pregnancyInducedHypertension", v)}
+          />
+        </div>
+      </div>
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+        <div>
+          <FieldLabel>High-risk pregnancy?</FieldLabel>
+          <YesNo value={state.highRiskPregnancy} onChange={(v) => set("highRiskPregnancy", v)} />
+        </div>
+        <div>
+          <FieldLabel>Previous pregnancies</FieldLabel>
+          <NumberStepper
+            value={state.previousPregnanciesCount}
+            onChange={(v) => set("previousPregnanciesCount", v)}
+            min={0}
+            max={20}
+          />
+        </div>
+      </div>
+      <div>
+        <Label htmlFor="prenatalSupplements">Prenatal vitamins / supplements</Label>
+        <Input
+          id="prenatalSupplements"
+          value={state.prenatalSupplements ?? ""}
+          onChange={(e) => set("prenatalSupplements", e.target.value)}
+          placeholder="e.g. Folic acid, iron, calcium"
+          className="mt-2 h-12"
+        />
+      </div>
+      <div>
+        <FieldLabel>Pregnancy symptoms</FieldLabel>
+        <ChipGroup
+          options={[
+            "nausea / vomiting",
+            "heartburn",
+            "constipation",
+            "swelling",
+            "food cravings",
+            "food aversions",
+          ].map((v) => ({ value: v, label: v }))}
+          value={state.pregnancySymptoms}
+          onChange={(v) => set("pregnancySymptoms", v as string[])}
+          multi
+        />
+      </div>
+    </div>
+  );
+}
+
+function LactationStepContent({ state, set }: { state: WizardState; set: SetFn }) {
+  return (
+    <div className="space-y-6">
+      <div>
+        <Label htmlFor="breastfeedingDifficulties">Breastfeeding difficulties</Label>
+        <Textarea
+          id="breastfeedingDifficulties"
+          rows={3}
+          value={state.breastfeedingDifficulties ?? ""}
+          onChange={(e) => set("breastfeedingDifficulties", e.target.value)}
+          className="mt-2"
+        />
+      </div>
+      <div>
+        <FieldLabel>Supplementing with formula?</FieldLabel>
+        <YesNo
+          value={state.formulaSupplementing}
+          onChange={(v) => set("formulaSupplementing", v)}
+        />
+      </div>
+    </div>
+  );
+}
+
 function FemaleSection({ state, set }: { state: WizardState; set: SetFn }) {
   return (
     <Section title="Women's health (confidential)">
@@ -1021,6 +1992,17 @@ function FemaleSection({ state, set }: { state: WizardState; set: SetFn }) {
           ]}
           value={state.periodsStatus}
           onChange={(v) => set("periodsStatus", v)}
+        />
+      </div>
+      <div>
+        <Label htmlFor="lastPeriodDate">Last period date</Label>
+        <Input
+          id="lastPeriodDate"
+          type="date"
+          max={new Date().toISOString().slice(0, 10)}
+          value={state.lastPeriodDate ?? ""}
+          onChange={(e) => set("lastPeriodDate", e.target.value)}
+          className="mt-2 h-12"
         />
       </div>
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
@@ -1109,32 +2091,20 @@ function FemaleSection({ state, set }: { state: WizardState; set: SetFn }) {
           </div>
         ) : null}
       </div>
-      <div>
-        <FieldLabel>Pregnancy / lactation</FieldLabel>
-        <Segmented
-          options={[
-            { value: "none", label: "None" },
-            { value: "trying", label: "Trying" },
-            { value: "pregnant", label: "Pregnant" },
-            { value: "lactating", label: "Lactating" },
-          ]}
-          value={state.pregnancyStatus}
-          onChange={(v) => set("pregnancyStatus", v)}
-        />
-        {state.pregnancyStatus === "pregnant" ? (
-          <div className="mt-3">
-            <Segmented
-              options={[
-                { value: "first", label: "1st trimester" },
-                { value: "second", label: "2nd trimester" },
-                { value: "third", label: "3rd trimester" },
-              ]}
-              value={state.trimester}
-              onChange={(v) => set("trimester", v)}
-            />
-          </div>
-        ) : null}
-      </div>
+      {state.pregnancyStatus === "pregnant" ? (
+        <div>
+          <FieldLabel>Trimester</FieldLabel>
+          <Segmented
+            options={[
+              { value: "first", label: "1st trimester" },
+              { value: "second", label: "2nd trimester" },
+              { value: "third", label: "3rd trimester" },
+            ]}
+            value={state.trimester}
+            onChange={(v) => set("trimester", v)}
+          />
+        </div>
+      ) : null}
       <div>
         <FieldLabel>Menopause reached?</FieldLabel>
         <YesNo
@@ -1242,9 +2212,111 @@ function MaleSection({ state, set }: { state: WizardState; set: SetFn }) {
   );
 }
 
+function InfantFeedingStepContent({ state, set }: { state: WizardState; set: SetFn }) {
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+        <div>
+          <FieldLabel>Breastfed?</FieldLabel>
+          <YesNo value={state.breastfed} onChange={(v) => set("breastfed", v)} />
+          {state.breastfed ? (
+            <NumberStepper
+              value={state.breastfeedingDurationMonths}
+              onChange={(v) => set("breastfeedingDurationMonths", v)}
+              min={0}
+              max={60}
+              suffix="months"
+            />
+          ) : null}
+        </div>
+        <div>
+          <FieldLabel>Formula fed?</FieldLabel>
+          <YesNo value={state.formulaFed} onChange={(v) => set("formulaFed", v)} />
+        </div>
+      </div>
+      <div>
+        <FieldLabel>Age of starting solids</FieldLabel>
+        <NumberStepper
+          value={state.solidsStartAgeMonths}
+          onChange={(v) => set("solidsStartAgeMonths", v)}
+          min={0}
+          max={24}
+          suffix="months"
+        />
+      </div>
+      <div>
+        <Label htmlFor="feedingDifficulties">Feeding difficulties</Label>
+        <Textarea
+          id="feedingDifficulties"
+          rows={3}
+          placeholder="Any difficulties with breast/bottle/solid feeding..."
+          value={state.feedingDifficulties ?? ""}
+          onChange={(e) => set("feedingDifficulties", e.target.value)}
+          className="mt-2"
+        />
+      </div>
+    </div>
+  );
+}
+
 function ChildSection({ state, set }: { state: WizardState; set: SetFn }) {
   return (
     <Section title="Child-specific">
+      <div>
+        <FieldLabel>Birth weight</FieldLabel>
+        <NumberStepper
+          value={state.birthWeightKg}
+          onChange={(v) => set("birthWeightKg", v)}
+          min={0.3}
+          max={10}
+          step={0.1}
+          suffix="kg"
+        />
+      </div>
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+        <div>
+          <FieldLabel>Weight-for-age percentile</FieldLabel>
+          <NumberStepper
+            value={state.weightForAgePercentile}
+            onChange={(v) => set("weightForAgePercentile", v)}
+            min={0}
+            max={100}
+            suffix="%ile"
+          />
+        </div>
+        <div>
+          <FieldLabel>Height-for-age percentile</FieldLabel>
+          <NumberStepper
+            value={state.heightForAgePercentile}
+            onChange={(v) => set("heightForAgePercentile", v)}
+            min={0}
+            max={100}
+            suffix="%ile"
+          />
+        </div>
+      </div>
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+        <div>
+          <Label htmlFor="motherMedicalHistory">Mother's medical history</Label>
+          <Textarea
+            id="motherMedicalHistory"
+            rows={3}
+            value={state.motherMedicalHistory ?? ""}
+            onChange={(e) => set("motherMedicalHistory", e.target.value)}
+            className="mt-2"
+          />
+        </div>
+        <div>
+          <Label htmlFor="fatherMedicalHistory">Father's medical history</Label>
+          <Textarea
+            id="fatherMedicalHistory"
+            rows={3}
+            value={state.fatherMedicalHistory ?? ""}
+            onChange={(e) => set("fatherMedicalHistory", e.target.value)}
+            className="mt-2"
+          />
+        </div>
+      </div>
       <div>
         <Label>School grade</Label>
         <Input
@@ -1275,6 +2347,20 @@ function ChildSection({ state, set }: { state: WizardState; set: SetFn }) {
           <FieldLabel hint="5 = extremely picky">Picky eater (1–5)</FieldLabel>
           <Rating value={state.pickyEater} onChange={(n) => set("pickyEater", n)} />
         </div>
+      </div>
+      <div>
+        <FieldLabel>Feeding concerns</FieldLabel>
+        <ChipGroup
+          options={[
+            { value: "poor_appetite", label: "Poor appetite" },
+            { value: "food_allergies", label: "Food allergies" },
+            { value: "underweight", label: "Underweight" },
+            { value: "developmental_concerns_asd", label: "Developmental concerns (ASD)" },
+          ]}
+          value={state.feedingConcerns}
+          onChange={(v) => set("feedingConcerns", v as string[])}
+          multi
+        />
       </div>
       <div>
         <FieldLabel>Appetite</FieldLabel>
@@ -1377,6 +2463,13 @@ function ChildSection({ state, set }: { state: WizardState; set: SetFn }) {
             "weight gain",
             "weight loss",
             "delayed milestones",
+            "poor weight gain",
+            "underweight",
+            "overweight",
+            "obesity",
+            "poor appetite",
+            "picky eating",
+            "digestive issues",
             "none",
           ].map((v) => ({ value: v, label: v }))}
           value={state.growthConcerns}

@@ -64,8 +64,14 @@ const requiredCore = z.object({
 });
 
 // ---------- optional sections (all branches) ----------
+const mealSlot = z.object({
+  time: z.string().max(10).optional(),
+  description: z.string().max(120).optional(),
+});
+
 const optionalCommon = z
   .object({
+    address: z.string().max(300).optional(),
     medicalHistory: z.array(z.string().max(60)).max(30).optional(),
     familyHistory: z.array(z.string().max(60)).max(30).optional(),
     medications: z
@@ -77,20 +83,83 @@ const optionalCommon = z
       )
       .max(30)
       .optional(),
+    allergies: z.string().max(200).optional(),
+    surgicalHistory: z.string().max(400).optional(),
+    oncology: z
+      .object({
+        diagnosis: z.string().max(200).optional(),
+        type: z.string().max(120).optional(),
+        diagnosisDate: z.string().date().optional(),
+        treatment: z
+          .array(z.enum(["chemotherapy", "radiation", "immunotherapy", "surgery", "bone_marrow_transplant", "other"]))
+          .max(6)
+          .optional(),
+        treatmentStage: z.string().max(120).optional(),
+        treatmentSymptoms: z
+          .array(
+            z.enum([
+              "loss_of_appetite",
+              "nausea",
+              "vomiting",
+              "taste_changes",
+              "mouth_sores",
+              "dry_mouth",
+              "difficulty_swallowing",
+              "early_satiety",
+              "food_aversion",
+              "diarrhea",
+              "constipation",
+              "fatigue",
+              "weight_loss",
+              "weight_gain",
+            ]),
+          )
+          .max(14)
+          .optional(),
+        eatingPatternChanges: z.string().max(400).optional(),
+        treatmentFoodPreferences: z.string().max(300).optional(),
+        treatmentFoodIntolerances: z.string().max(300).optional(),
+        supplements: z.string().max(300).optional(),
+        tubeFeeding: z.boolean().optional(),
+        foodSafetyConcerns: z
+          .array(z.enum(["raw_sprouts", "street_food", "raw_eggs", "unpasteurized_dairy", "none"]))
+          .max(5)
+          .optional(),
+      })
+      .optional(),
+    bodyMeasurements: z
+      .object({
+        bloodGroup: z.enum(["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-", "unknown"]).optional(),
+        targetWeightKg: z.number().min(2).max(400).optional(),
+        waistNavelCm: z.number().min(20).max(250).optional(),
+        waistThinnestCm: z.number().min(20).max(250).optional(),
+        hipCm: z.number().min(20).max(250).optional(),
+        neckCm: z.number().min(10).max(100).optional(),
+        bloodPressure: z.string().max(20).optional(),
+        pulseRate: z.number().int().min(20).max(250).optional(),
+        heaviestWeightKg: z.number().min(2).max(400).optional(),
+        lightestWeightKg: z.number().min(2).max(400).optional(),
+        weight6moAgoKg: z.number().min(2).max(400).optional(),
+        weight3yrAgoKg: z.number().min(2).max(400).optional(),
+      })
+      .optional(),
     digestion: z
       .object({
         bowelFrequency: z.string().max(40).optional(),
         stoolConsistency: z.array(z.string().max(40)).max(10).optional(),
         bloatingTiming: z.array(z.string().max(40)).max(10).optional(),
         acidityTriggers: z.array(z.string().max(40)).max(10).optional(),
+        digestiveSymptoms: z.array(z.string().max(40)).max(10).optional(),
         acidityRating: ratingSchema.optional(),
         bloatingRating: ratingSchema.optional(),
         constipationRating: ratingSchema.optional(),
+        dailyRituals: z.array(z.string().max(60)).max(10).optional(),
+        lunchDuration: z.enum(["under_10", "10_20", "over_20"]).optional(),
       })
       .optional(),
     foodPattern: z
       .object({
-        dietType: z.enum(["veg", "non_veg", "eggetarian", "vegan", "jain"]).optional(),
+        dietType: z.enum(["veg", "non_veg", "eggetarian", "vegan", "jain", "pescatarian"]).optional(),
         cuisines: z.array(z.string().max(40)).max(15).optional(),
         mealsPerDay: z.number().int().min(1).max(8).optional(),
         eatsOutPerWeek: z.number().int().min(0).max(21).optional(),
@@ -98,21 +167,57 @@ const optionalCommon = z
           .enum(["rarely", "1-2_wk", "3-5_wk", "daily", "multi_daily"])
           .optional(),
         sugarDrinks: z.boolean().optional(),
+        energyCarbonatedDrinks: z.enum(["never", "rarely", "sometimes", "daily"]).optional(),
         teaCoffeePerDay: z.number().int().min(0).max(20).optional(),
+        teaCoffeeFirstCupTime: z.string().max(10).optional(),
+        homeCooked: z.enum(["yes", "partially", "rarely"]).optional(),
+        whoCooks: z.enum(["self", "family", "cook_help", "mix"]).optional(),
+        cookingOil: z.string().max(80).optional(),
+        foodLikes: z.string().max(200).optional(),
+        foodDislikes: z.string().max(200).optional(),
+        cravings: z.string().max(200).optional(),
+        eatingSpeed: z.enum(["slow", "moderate", "fast"]).optional(),
+        bingeEating: z.enum(["no", "occasionally", "frequently"]).optional(),
+        dailyMeals: z
+          .object({
+            breakfast: mealSlot.optional(),
+            midMorning: mealSlot.optional(),
+            lunch: mealSlot.optional(),
+            evening: mealSlot.optional(),
+            dinner: mealSlot.optional(),
+            postDinner: mealSlot.optional(),
+          })
+          .optional(),
       })
       .optional(),
     lifestyleDepth: z
       .object({
         stress: ratingSchema.optional(),
+        stressSource: z.enum(["work", "family", "health", "financial", "multiple"]).optional(),
         screenTimeHrs: z.number().min(0).max(24).optional(),
         smoking: z.object({ active: z.boolean(), frequency: z.string().max(40).optional() }).optional(),
         alcohol: z.object({ active: z.boolean(), frequency: z.string().max(40).optional(), drinksPerSession: z.string().max(40).optional() }).optional(),
         shiftWork: z.boolean().optional(),
         travelFrequency: z.string().max(40).optional(),
+        sleepTime: z.string().max(10).optional(),
+        wakeTime: z.string().max(10).optional(),
+        dailySteps: z.number().int().min(0).max(100000).optional(),
+        exerciseType: z.string().max(120).optional(),
+        exerciseDuration: z.enum(["none", "15_30", "30_45", "45_60", "60_plus"]).optional(),
+        exerciseFrequency: z.enum(["daily", "4_5_wk", "2_3_wk", "rarely"]).optional(),
+        wellnessRituals: z.array(z.string().max(60)).max(10).optional(),
       })
       .optional(),
     bloodParameters: z.array(z.string().max(60)).max(20).optional(),
     inflammationConcerns: z.boolean().optional(),
+    goals: z
+      .object({
+        pastAttempts: z.string().max(500).optional(),
+        pastAttemptsOutcome: z.string().max(500).optional(),
+        biggestChallenge: z.string().max(500).optional(),
+        programExpectations: z.string().max(500).optional(),
+      })
+      .optional(),
     notes: z.string().max(240).optional(),
   })
   .partial();
@@ -121,11 +226,19 @@ const optionalCommon = z
 const femaleOptional = z
   .object({
     periodsStatus: z.enum(["regular", "irregular", "absent", "menopausal"]).optional(),
+    lastPeriodDate: z.string().date().optional(),
     cycleLengthDays: z.number().int().min(10).max(90).optional(),
     flow: z.array(z.enum(["light", "moderate", "heavy", "very_heavy", "clots"])).max(5).optional(),
     periodDays: z.number().int().min(1).max(15).optional(),
     pmsSymptoms: z.array(z.string().max(40)).max(15).optional(),
     painSeverity: ratingSchema.optional(),
+    fertility: z
+      .object({
+        tryingDuration: z.enum(["under_6mo", "6_12mo", "1_2yr", "2yr_plus"]).optional(),
+        treatment: z.enum(["none", "iui", "ivf", "other"]).optional(),
+        diagnosedConditions: z.string().max(300).optional(),
+      })
+      .optional(),
     hormonalIntervention: z
       .object({
         active: z.boolean(),
@@ -136,6 +249,20 @@ const femaleOptional = z
       .object({
         status: z.enum(["none", "trying", "pregnant", "lactating"]),
         trimester: z.enum(["first", "second", "third"]).optional(),
+        dueDate: z.string().date().optional(),
+        prePregnancyWeightKg: z.number().min(2).max(400).optional(),
+        gestationalDiabetes: z.boolean().optional(),
+        pregnancyInducedHypertension: z.boolean().optional(),
+        highRiskPregnancy: z.boolean().optional(),
+        previousPregnanciesCount: z.number().int().min(0).max(20).optional(),
+        prenatalSupplements: z.string().max(200).optional(),
+        symptoms: z.array(z.string().max(40)).max(15).optional(),
+      })
+      .optional(),
+    lactation: z
+      .object({
+        breastfeedingDifficulties: z.string().max(300).optional(),
+        formulaSupplementing: z.boolean().optional(),
       })
       .optional(),
     menopause: z
@@ -173,6 +300,21 @@ const maleOptional = z
 
 const childOptional = z
   .object({
+    gender: z.enum(["male", "female"]).optional(),
+    birthWeightKg: z.number().min(0.3).max(10).optional(),
+    weightForAgePercentile: z.number().min(0).max(100).optional(),
+    heightForAgePercentile: z.number().min(0).max(100).optional(),
+    motherMedicalHistory: z.string().max(400).optional(),
+    fatherMedicalHistory: z.string().max(400).optional(),
+    feeding: z
+      .object({
+        breastfed: z.boolean().optional(),
+        breastfeedingDurationMonths: z.number().min(0).max(60).optional(),
+        formulaFed: z.boolean().optional(),
+        solidsStartAgeMonths: z.number().min(0).max(24).optional(),
+        feedingDifficulties: z.string().max(300).optional(),
+      })
+      .optional(),
     schoolGrade: z.string().max(20).optional(),
     stamina: ratingSchema.optional(),
     attentionSpan: ratingSchema.optional(),
@@ -187,6 +329,7 @@ const childOptional = z
     packagedFoodFrequency: z.enum(["rarely", "1-2_wk", "3-5_wk", "daily", "multi_daily"]).optional(),
     memory: ratingSchema.optional(),
     growthConcerns: z.array(z.string().max(40)).max(10).optional(),
+    feedingConcerns: z.array(z.string().max(60)).max(10).optional(),
   })
   .partial();
 
@@ -196,12 +339,17 @@ const guardianBlock = z.object({
   guardianRelationship: z.string().min(1).max(60),
   guardianPhone: phoneSchema,
   guardianEmail: emailSchema.optional(),
+  referredBy: z.string().max(120).optional(),
 });
 
 const adultContact = z
   .object({
     phone: phoneSchema.optional(),
     email: emailSchema.optional(),
+    profession: z.string().max(120).optional(),
+    maritalStatus: z.enum(["single", "married", "divorced", "widowed"]).optional(),
+    childrenCount: z.enum(["none", "1", "2", "3+"]).optional(),
+    referredBy: z.string().max(120).optional(),
   })
   .refine((v) => Boolean(v.phone || v.email), {
     message: "Provide a phone number or email",
