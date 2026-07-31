@@ -48,6 +48,7 @@ const requiredCore = z.object({
   consent: z.literal(true),
   primaryGoal: z.enum([
     "weight_loss",
+    "fat_loss",
     "weight_gain",
     "muscle_gain",
     "energy",
@@ -66,7 +67,7 @@ const requiredCore = z.object({
 // ---------- optional sections (all branches) ----------
 const mealSlot = z.object({
   time: z.string().max(10).optional(),
-  description: z.string().max(120).optional(),
+  items: z.array(z.string().max(60)).max(10).optional(),
 });
 
 const optionalCommon = z

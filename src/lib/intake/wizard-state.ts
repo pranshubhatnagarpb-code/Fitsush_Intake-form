@@ -108,12 +108,12 @@ export type WizardState = {
   eatingSpeed?: "slow" | "moderate" | "fast";
   bingeEating?: "no" | "occasionally" | "frequently";
   dailyMeals: {
-    breakfast: { time?: string; description?: string };
-    midMorning: { time?: string; description?: string };
-    lunch: { time?: string; description?: string };
-    evening: { time?: string; description?: string };
-    dinner: { time?: string; description?: string };
-    postDinner: { time?: string; description?: string };
+    breakfast: { time?: string; items: string[] };
+    midMorning: { time?: string; items: string[] };
+    lunch: { time?: string; items: string[] };
+    evening: { time?: string; items: string[] };
+    dinner: { time?: string; items: string[] };
+    postDinner: { time?: string; items: string[] };
   };
   // lifestyle depth (adults)
   stress?: number;
@@ -223,12 +223,12 @@ export const initialState: WizardState = {
   bloodParameters: [],
   cuisines: [],
   dailyMeals: {
-    breakfast: {},
-    midMorning: {},
-    lunch: {},
-    evening: {},
-    dinner: {},
-    postDinner: {},
+    breakfast: { items: [] },
+    midMorning: { items: [] },
+    lunch: { items: [] },
+    evening: { items: [] },
+    dinner: { items: [] },
+    postDinner: { items: [] },
   },
   wellnessRituals: [],
   flow: [],

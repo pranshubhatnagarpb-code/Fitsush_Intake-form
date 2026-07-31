@@ -50,6 +50,7 @@ const COMPLAINTS = [
 
 const GOALS: { value: string; label: string }[] = [
   { value: "weight_loss", label: "Weight loss" },
+  { value: "fat_loss", label: "Fat loss" },
   { value: "weight_gain", label: "Weight gain" },
   { value: "muscle_gain", label: "Muscle gain" },
   { value: "energy", label: "More energy" },
@@ -223,8 +224,8 @@ export function IntakeWizard() {
               className="h-12"
             />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
+          <div className="flex gap-3">
+            <div className="min-w-0 flex-[3]">
               <Label htmlFor="dob">Date of birth</Label>
               <Input
                 id="dob"
@@ -239,10 +240,10 @@ export function IntakeWizard() {
                     age: dob ? calcAge(dob) : s.age,
                   }));
                 }}
-                className="h-12"
+                className="h-12 w-full"
               />
             </div>
-            <div>
+            <div className="min-w-0 flex-[2]">
               <Label htmlFor="age">Age</Label>
               <Input
                 id="age"
@@ -254,7 +255,7 @@ export function IntakeWizard() {
                 onChange={(e) =>
                   set("age", e.target.value ? Number(e.target.value) : undefined)
                 }
-                className={cn("h-12", state.dob && "bg-muted")}
+                className={cn("h-12 w-full", state.dob && "bg-muted")}
               />
               {state.dob ? (
                 <p className="mt-1 text-xs text-muted-foreground">Auto-calculated from DOB</p>
@@ -1668,41 +1669,66 @@ function MedicationsEditor({ state, set }: { state: WizardState; set: SetFn }) {
 }
 
 const MEAL_SLOTS = [
-  ["breakfast", "Breakfast", "What do you usually eat?"],
-  ["midMorning", "Mid-Morning", "Snack or fruit?"],
-  ["lunch", "Lunch", "What do you usually eat?"],
-  ["evening", "Evening", "Evening snack?"],
-  ["dinner", "Dinner", "What do you usually eat?"],
-  ["postDinner", "Post-Dinner", "Anything after dinner?"],
+  [
+    "breakfast",
+    "Breakfast",
+    ["poha / upma", "idli / dosa / sambar", "paratha", "bread / toast / sandwich", "eggs", "cereal / oats", "fruits", "tea / coffee only", "skip breakfast"],
+  ],
+  [
+    "midMorning",
+    "Mid-Morning",
+    ["fruit", "nuts / seeds", "tea / coffee", "biscuits / rusk", "juice", "nothing"],
+  ],
+  [
+    "lunch",
+    "Lunch",
+    ["roti / sabzi / dal / rice", "curd / salad", "non-veg curry", "outside food", "skip lunch"],
+  ],
+  [
+    "evening",
+    "Evening",
+    ["tea / coffee + snack", "fruit", "namkeen / fried snacks", "nuts", "nothing"],
+  ],
+  [
+    "dinner",
+    "Dinner",
+    ["roti / sabzi / dal / rice", "khichdi / soup (light)", "non-veg curry", "outside food", "skip dinner"],
+  ],
+  [
+    "postDinner",
+    "Post-Dinner",
+    ["milk", "fruit", "dessert / sweet", "nothing"],
+  ],
 ] as const;
 
 function DailyMealsEditor({ state, set }: { state: WizardState; set: SetFn }) {
   const meals = state.dailyMeals;
   const update = (
     key: (typeof MEAL_SLOTS)[number][0],
-    patch: Partial<{ time: string; description: string }>,
+    patch: Partial<{ time: string; items: string[] }>,
   ) => {
     set("dailyMeals", { ...meals, [key]: { ...meals[key], ...patch } });
   };
   return (
-    <div className="space-y-4">
-      {MEAL_SLOTS.map(([key, label, placeholder]) => (
+    <div className="space-y-5">
+      {MEAL_SLOTS.map(([key, label, options]) => (
         <div key={key} className="space-y-1.5">
-          <span className="text-sm font-medium text-muted-foreground">{label}</span>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-muted-foreground">{label}</span>
             <Input
               type="time"
-              className="h-11 w-[7.5rem] shrink-0"
+              className="h-9 w-[9rem] shrink-0"
               value={meals[key].time ?? ""}
               onChange={(e) => update(key, { time: e.target.value })}
             />
-            <Input
-              className="h-11 min-w-0 flex-1"
-              placeholder={placeholder}
-              value={meals[key].description ?? ""}
-              onChange={(e) => update(key, { description: e.target.value })}
-            />
           </div>
+          <ChipGroup
+            options={options.map((v) => ({ value: v, label: v }))}
+            value={meals[key].items}
+            onChange={(v) => update(key, { items: v as string[] })}
+            multi
+            allowOther
+          />
         </div>
       ))}
     </div>
