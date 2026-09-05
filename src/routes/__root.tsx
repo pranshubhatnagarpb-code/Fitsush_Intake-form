@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/sonner";
 
 import appCss from "../styles.css?url";
 
-const SITE_URL = "https://intake.malikakabrarathi.com";
+const SITE_URL = "https://intake.fitsush.com";
 const OG_IMAGE_URL = `${SITE_URL}/og-image.png`;
 
 function NotFoundComponent() {
@@ -33,20 +33,20 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "MKR Clinic - Client Intake Form" },
-      { name: "description", content: "Personalised nutrition intake by Dr. Malika Kabra Rathi." },
-      { name: "author", content: "MKR Clinic" },
-      { property: "og:title", content: "MKR Clinic - Client Intake Form" },
+      { title: "Fitsush - Client Intake Form" },
+      { name: "description", content: "Personalised nutrition intake by Fitsush." },
+      { name: "author", content: "Fitsush" },
+      { property: "og:title", content: "Fitsush - Client Intake Form" },
       { property: "og:description", content: "Start your personalised nutrition plan in a few thoughtful steps." },
       { property: "og:type", content: "website" },
       { property: "og:url", content: SITE_URL },
-      { property: "og:site_name", content: "MKR Clinic" },
+      { property: "og:site_name", content: "Fitsush" },
       { property: "og:image", content: OG_IMAGE_URL },
       { property: "og:image:width", content: "1200" },
       { property: "og:image:height", content: "630" },
-      { property: "og:image:alt", content: "MKR Clinic - Client Intake Form" },
+      { property: "og:image:alt", content: "Fitsush - Client Intake Form" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "MKR Clinic - Client Intake Form" },
+      { name: "twitter:title", content: "Fitsush - Client Intake Form" },
       { name: "twitter:description", content: "Start your personalised nutrition plan in a few thoughtful steps." },
       { name: "twitter:image", content: OG_IMAGE_URL },
     ],

@@ -1,7 +1,7 @@
 {
-  "name": "MKR Clinic - Client Intake Form",
-  "short_name": "MKR Clinic",
-  "description": "Personalised nutrition intake by Dr. Malika Kabra Rathi.",
+  "name": "Fitsush - Client Intake Form",
+  "short_name": "Fitsush",
+  "description": "Personalised nutrition intake by Fitsush.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#000000",

@@ -2,7 +2,7 @@ import * as React from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, ArrowRight, Check, Loader2 } from "lucide-react";
-import mkrLogo from "@/mkr-logo.webp";
+import fitsushLogo from "@/fitsush-logo.webp";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -705,13 +705,13 @@ export function IntakeWizard() {
       {/* Top progress strip */}
       <header className="sticky top-0 z-10 border-b bg-card/95 shadow-sm backdrop-blur">
         <div className="mx-auto max-w-2xl px-4 pt-3 pb-3">
-          {/* MKR Clinic branding */}
+          {/* Fitsush branding */}
           <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <img src={mkrLogo} alt="MKR Clinic" className="h-8 w-auto object-contain" />
+              <img src={fitsushLogo} alt="Fitsush" className="h-8 w-auto object-contain" />
               <div className="leading-none">
-                <p className="text-xs font-semibold text-foreground">MKR Clinic</p>
-                <p className="text-[10px] text-muted-foreground">Dr. Malika Kabra Rathi</p>
+                <p className="text-xs font-semibold text-foreground">Fitsush</p>
+                <p className="text-[10px] text-muted-foreground">Nutrition Consultation</p>
               </div>
             </div>
             <span className="text-xs text-muted-foreground">

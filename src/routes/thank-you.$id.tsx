@@ -4,7 +4,7 @@ import { Check } from "lucide-react";
 export const Route = createFileRoute("/thank-you/$id")({
   head: () => ({
     meta: [
-      { title: "Thank you — MKR Clinic" },
+      { title: "Thank you — Fitsush" },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -20,13 +20,13 @@ function ThankYouPage() {
           <Check className="h-8 w-8" />
         </div>
         <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-primary">
-          MKR Clinic
+          Fitsush
         </p>
         <h1 className="text-2xl font-semibold text-foreground">
           Thank you — we&apos;ve received your intake.
         </h1>
         <p className="mt-3 text-sm text-muted-foreground">
-          Dr. Malika Kabra Rathi&apos;s team will reach out within 24 hours to plan your consultation.
+          The Fitsush team will reach out within 24 hours to plan your consultation.
         </p>
         <div className="mt-6 rounded-2xl bg-secondary/60 p-4 text-left">
           <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
