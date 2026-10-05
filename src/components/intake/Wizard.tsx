@@ -24,6 +24,8 @@ import {
 import {
   initialState,
   buildPayload,
+  eatsNonVeg,
+  WEEKDAYS,
   type WizardState,
   type WizardBranch,
 } from "@/lib/intake/wizard-state";
@@ -45,7 +47,6 @@ const COMPLAINTS = [
   "constipation",
   "headaches",
   "low focus",
-  "other",
 ];
 
 const GOALS: { value: string; label: string }[] = [
@@ -58,6 +59,9 @@ const GOALS: { value: string; label: string }[] = [
   { value: "hormonal_balance", label: "Hormonal balance" },
   { value: "sports_performance", label: "Sports performance" },
   { value: "manage_medical_condition", label: "Manage a condition" },
+  { value: "pregnancy", label: "Pregnancy" },
+  { value: "post_partum", label: "Post-partum" },
+  { value: "fertility", label: "Fertility" },
   { value: "general_wellness", label: "General wellness" },
 ];
 
@@ -66,7 +70,7 @@ const CONDITIONS = [
   "BP",
   "thyroid",
   "cholesterol",
-  "PCOS/PCOD",
+  "PMOS/PCOD",
   "IBS",
   "cardiac",
   "kidney",
@@ -77,6 +81,29 @@ const CONDITIONS = [
   "hospitalizations",
 ];
 
+const NO_CONDITIONS = "none";
+
+const FOOD_RESTRICTIONS = [
+  "no onion",
+  "no garlic",
+  "no root vegetables",
+  "no beef",
+  "no pork",
+  "no eggs",
+  "no seafood",
+  "no mushroom",
+  "no gluten",
+  "no dairy",
+  "no sugar",
+  "no caffeine",
+];
+
+// "None" is exclusive: picking it clears the rest, picking anything else clears it
+function withExclusiveNone(prev: string[], next: string[]): string[] {
+  const pickedNone = next.includes(NO_CONDITIONS) && !prev.includes(NO_CONDITIONS);
+  return pickedNone ? [NO_CONDITIONS] : next.filter((c) => c !== NO_CONDITIONS);
+}
+
 type StepDef = {
   id: string;
   title: string;
@@ -84,6 +111,12 @@ type StepDef = {
   render: () => React.ReactNode;
   validate: () => string | null;
 };
+
+function calcBmi(weightKg: number | undefined, heightCm: number | undefined): number | undefined {
+  if (!weightKg || !heightCm || heightCm <= 0) return undefined;
+  const m = heightCm / 100;
+  return Math.round((weightKg / (m * m)) * 10) / 10;
+}
 
 function calcAge(dob: string): number | undefined {
   const d = new Date(dob);
@@ -523,6 +556,7 @@ export function IntakeWizard() {
           onChange={(v) => set("chiefComplaints", v as string[])}
           multi
           max={3}
+          allowOther
         />
       ),
       validate: () =>
@@ -531,6 +565,48 @@ export function IntakeWizard() {
           : state.chiefComplaints.length > 3
             ? "Pick up to 3"
             : null,
+    },
+    {
+      id: "current-conditions",
+      title: "Current medical conditions",
+      subtitle: "Select all that apply, or None.",
+      render: () => (
+        <ChipGroup
+          options={[
+            ...CONDITIONS.map((c) => ({ value: c, label: c })),
+            { value: NO_CONDITIONS, label: "None" },
+          ]}
+          value={state.currentConditions}
+          onChange={(v) =>
+            set("currentConditions", withExclusiveNone(state.currentConditions, v as string[]))
+          }
+          multi
+          allowOther
+        />
+      ),
+      validate: () =>
+        state.currentConditions.length === 0 ? "Select at least one, or None" : null,
+    },
+    {
+      id: "food-restrictions",
+      title: "Any food restrictions?",
+      subtitle: "Foods you don't eat for religious, cultural or personal reasons. Select all that apply, or None.",
+      render: () => (
+        <ChipGroup
+          options={[
+            ...FOOD_RESTRICTIONS.map((c) => ({ value: c, label: c })),
+            { value: NO_CONDITIONS, label: "None" },
+          ]}
+          value={state.foodRestrictions}
+          onChange={(v) =>
+            set("foodRestrictions", withExclusiveNone(state.foodRestrictions, v as string[]))
+          }
+          multi
+          allowOther
+        />
+      ),
+      validate: () =>
+        state.foodRestrictions.length === 0 ? "Select at least one, or None" : null,
     },
     {
       id: "body",
@@ -558,6 +634,12 @@ export function IntakeWizard() {
               step={1}
               suffix="cm"
             />
+          </div>
+          <div>
+            <FieldLabel>BMI</FieldLabel>
+            <div className="flex min-h-12 items-center rounded-md border border-border bg-muted px-4 text-sm text-muted-foreground">
+              {calcBmi(state.weightKg, state.heightCm) ?? "Enter weight and height above"}
+            </div>
           </div>
         </div>
       ),
@@ -865,6 +947,7 @@ function OptionalSections({ state, set }: { state: WizardState; set: SetFn }) {
           value={state.medicalHistory}
           onChange={(v) => set("medicalHistory", v as string[])}
           multi
+          allowOther
         />
         <div>
           <Label htmlFor="allergies">Allergies / intolerances</Label>
@@ -896,6 +979,7 @@ function OptionalSections({ state, set }: { state: WizardState; set: SetFn }) {
           value={state.familyHistory}
           onChange={(v) => set("familyHistory", v as string[])}
           multi
+          allowOther
         />
       </Section>
 
@@ -1157,6 +1241,32 @@ function OptionalSections({ state, set }: { state: WizardState; set: SetFn }) {
             onChange={(v) => set("dietType", v)}
           />
         </div>
+        {eatsNonVeg(state.dietType) ? (
+          <div>
+            <FieldLabel>Days you eat only veg</FieldLabel>
+            <p className="mb-2 text-sm text-muted-foreground">
+              e.g. no non-veg on Tuesdays. Leave blank if you eat non-veg any day.
+            </p>
+            <ChipGroup
+              options={WEEKDAYS.map((d) => ({ value: d, label: d }))}
+              value={state.vegOnlyDays}
+              onChange={(v) => set("vegOnlyDays", v as WizardState["vegOnlyDays"])}
+              multi
+            />
+            {state.vegOnlyDays.length > 0 ? (
+              <p className="mt-2 text-sm text-muted-foreground">
+                Non-veg days:{" "}
+                {WEEKDAYS.filter((d) => !state.vegOnlyDays.includes(d)).join(", ") || "none"}
+              </p>
+            ) : null}
+            <Input
+              value={state.vegDaysNote ?? ""}
+              onChange={(e) => set("vegDaysNote", e.target.value)}
+              placeholder="Other veg periods, e.g. Navratri, Shravan month"
+              className="mt-3 h-12"
+            />
+          </div>
+        ) : null}
         <div>
           <FieldLabel>Cuisines you eat most</FieldLabel>
           <ChipGroup
@@ -1607,6 +1717,20 @@ function OptionalSections({ state, set }: { state: WizardState; set: SetFn }) {
             value={state.programExpectations ?? ""}
             onChange={(e) => set("programExpectations", e.target.value)}
             className="mt-2"
+          />
+        </div>
+        <div>
+          <FieldLabel>How many months are you willing to give to this program?</FieldLabel>
+          <Segmented
+            options={[
+              { value: "less_than_1", label: "< 1 month" },
+              { value: "1_3", label: "1–3 months" },
+              { value: "3_6", label: "3–6 months" },
+              { value: "6_12", label: "6–12 months" },
+              { value: "12_plus", label: "12+ months" },
+            ]}
+            value={state.commitmentMonths}
+            onChange={(v) => set("commitmentMonths", v)}
           />
         </div>
       </Section>

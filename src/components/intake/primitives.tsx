@@ -62,6 +62,8 @@ export function ChipGroup<T extends string>({
     onChange(arr);
   };
 
+  const atMax = multi && !!max && Array.isArray(value) && value.length >= max;
+
   const predefinedValues = new Set(options.map((o) => o.value));
   const customValues =
     multi && Array.isArray(value)
@@ -72,7 +74,7 @@ export function ChipGroup<T extends string>({
     const trimmed = otherText.trim();
     if (!trimmed) { setShowInput(false); return; }
     const arr = Array.isArray(value) ? [...(value as string[])] : [];
-    if (!arr.includes(trimmed)) arr.push(trimmed);
+    if (!arr.includes(trimmed) && (!max || arr.length < max)) arr.push(trimmed);
     onChange(arr as T[]);
     setOtherText("");
     setShowInput(false);
@@ -95,7 +97,7 @@ export function ChipGroup<T extends string>({
           {v} ×
         </Chip>
       ))}
-      {allowOther && multi && !showInput && (
+      {allowOther && multi && !showInput && !atMax && (
         <Chip onClick={openInput}>+ Other</Chip>
       )}
       {allowOther && multi && showInput && (

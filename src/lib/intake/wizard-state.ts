@@ -29,6 +29,8 @@ export type WizardState = {
   // required
   primaryGoal?: string;
   chiefComplaints: string[];
+  currentConditions: string[];
+  foodRestrictions: string[];
   weightKg?: number;
   heightCm?: number;
   sleepHours?: number;
@@ -91,6 +93,8 @@ export type WizardState = {
   inflammationConcerns?: boolean;
   // food pattern
   dietType?: "veg" | "non_veg" | "eggetarian" | "vegan" | "jain" | "pescatarian";
+  vegOnlyDays: (typeof WEEKDAYS)[number][];
+  vegDaysNote?: string;
   cuisines: string[];
   mealsPerDay?: number;
   eatsOutPerWeek?: number;
@@ -138,6 +142,7 @@ export type WizardState = {
   pastAttemptsOutcome?: string;
   biggestChallenge?: string;
   programExpectations?: string;
+  commitmentMonths?: "less_than_1" | "1_3" | "3_6" | "6_12" | "12_plus";
   // female
   periodsStatus?: "regular" | "irregular" | "absent" | "menopausal";
   lastPeriodDate?: string;
@@ -209,6 +214,8 @@ export const initialState: WizardState = {
   city: "",
   consent: false,
   chiefComplaints: [],
+  currentConditions: [],
+  foodRestrictions: [],
   medicalHistory: [],
   familyHistory: [],
   medications: [],
@@ -221,6 +228,7 @@ export const initialState: WizardState = {
   digestiveSymptoms: [],
   dailyRituals: [],
   bloodParameters: [],
+  vegOnlyDays: [],
   cuisines: [],
   dailyMeals: {
     breakfast: { items: [] },
@@ -242,6 +250,11 @@ export const initialState: WizardState = {
   growthConcerns: [],
   feedingConcerns: [],
 };
+
+export const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
+
+export const eatsNonVeg = (d: WizardState["dietType"]) =>
+  d === "non_veg" || d === "eggetarian" || d === "pescatarian";
 
 const stripEmpty = <T extends object>(obj: T): T | undefined => {
   const out: Record<string, unknown> = {};
@@ -272,6 +285,8 @@ export function buildPayload(s: WizardState): SubmissionInput {
     consent: true as const,
     primaryGoal: s.primaryGoal as never,
     chiefComplaints: s.chiefComplaints,
+    currentConditions: s.currentConditions,
+    foodRestrictions: s.foodRestrictions,
     body: { weightKg: s.weightKg!, heightCm: s.heightCm! },
     lifestyle: {
       sleepHours: s.sleepHours!,
@@ -339,6 +354,9 @@ export function buildPayload(s: WizardState): SubmissionInput {
     }),
     foodPattern: stripEmpty({
       dietType: s.dietType,
+      // only meaningful when the client eats some non-veg
+      vegOnlyDays: eatsNonVeg(s.dietType) ? s.vegOnlyDays : undefined,
+      vegDaysNote: eatsNonVeg(s.dietType) ? s.vegDaysNote?.trim() || undefined : undefined,
       cuisines: s.cuisines,
       mealsPerDay: s.mealsPerDay,
       eatsOutPerWeek: s.eatsOutPerWeek,
@@ -386,6 +404,7 @@ export function buildPayload(s: WizardState): SubmissionInput {
       pastAttemptsOutcome: s.pastAttemptsOutcome,
       biggestChallenge: s.biggestChallenge,
       programExpectations: s.programExpectations,
+      commitmentMonths: s.commitmentMonths,
     }),
     notes: s.notes,
   });

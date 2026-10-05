@@ -11,6 +11,12 @@ export type SubmitIntakeResult = {
 // Creates or updates a client record in the shared PMS database.
 // Maps all intake fields to their corresponding clients table columns.
 // ---------------------------------------------------------------------------
+function calcBmi(weightKg: number | null | undefined, heightCm: number | null | undefined): number | null {
+  if (!weightKg || !heightCm || heightCm <= 0) return null;
+  const m = heightCm / 100;
+  return Math.round((weightKg / (m * m)) * 10) / 10;
+}
+
 async function upsertClient(input: SubmissionInput, submissionId: string): Promise<string | null> {
   const isChild = input.branch === "child";
   const phone = isChild
@@ -54,6 +60,7 @@ async function upsertClient(input: SubmissionInput, submissionId: string): Promi
     gender: isChild ? null : input.branch,
     weight: input.required.body.weightKg,
     height: input.required.body.heightCm,
+    bmi: calcBmi(input.required.body.weightKg, input.required.body.heightCm),
     goal: input.required.primaryGoal,
     chief_complaints: input.required.chiefComplaints,
     updated_at: new Date().toISOString(),
@@ -64,9 +71,13 @@ async function upsertClient(input: SubmissionInput, submissionId: string): Promi
 
   // Optional fields — only set if provided, never overwrite with null
   if (opt?.foodPattern?.dietType) payload.diet_preference = opt.foodPattern.dietType;
-  if (Array.isArray(opt?.medicalHistory) && opt.medicalHistory.length > 0) {
-    payload.health_conditions = opt.medicalHistory;
-  }
+  const healthConditions = [
+    ...new Set([
+      ...(input.required.currentConditions ?? []).filter((c) => c !== "none"),
+      ...(Array.isArray(opt?.medicalHistory) ? opt.medicalHistory : []),
+    ]),
+  ];
+  if (healthConditions.length > 0) payload.health_conditions = healthConditions;
   if (Array.isArray(opt?.familyHistory) && opt.familyHistory.length > 0) {
     payload.family_history = opt.familyHistory;
   }

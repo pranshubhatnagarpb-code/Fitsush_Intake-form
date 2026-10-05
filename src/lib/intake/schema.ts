@@ -56,9 +56,14 @@ const requiredCore = z.object({
     "hormonal_balance",
     "sports_performance",
     "manage_medical_condition",
+    "pregnancy",
+    "post_partum",
+    "fertility",
     "general_wellness",
   ]),
   chiefComplaints: z.array(z.string().min(1).max(60)).min(1).max(3),
+  currentConditions: z.array(z.string().min(1).max(60)).max(30).optional(),
+  foodRestrictions: z.array(z.string().min(1).max(60)).max(30).optional(),
   body: bodySnapshot,
   lifestyle: lifestyleQuick,
   symptoms: symptomSnapshot,
@@ -161,6 +166,11 @@ const optionalCommon = z
     foodPattern: z
       .object({
         dietType: z.enum(["veg", "non_veg", "eggetarian", "vegan", "jain", "pescatarian"]).optional(),
+        vegOnlyDays: z
+          .array(z.enum(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]))
+          .max(7)
+          .optional(),
+        vegDaysNote: z.string().max(200).optional(),
         cuisines: z.array(z.string().max(40)).max(15).optional(),
         mealsPerDay: z.number().int().min(1).max(8).optional(),
         eatsOutPerWeek: z.number().int().min(0).max(21).optional(),
@@ -217,6 +227,7 @@ const optionalCommon = z
         pastAttemptsOutcome: z.string().max(500).optional(),
         biggestChallenge: z.string().max(500).optional(),
         programExpectations: z.string().max(500).optional(),
+        commitmentMonths: z.enum(["less_than_1", "1_3", "3_6", "6_12", "12_plus"]).optional(),
       })
       .optional(),
     notes: z.string().max(240).optional(),
